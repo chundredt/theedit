@@ -13,7 +13,8 @@ import { planTotals } from '../domain/shopping';
 import { recipeStats } from '../domain/recipes';
 import { countOn, dayScore, isDone, isDue, streak, weekdayIndex } from '../domain/habits';
 import { logsOn, plannedFor } from '../domain/workouts';
-import { addDays, fmtDate, mondayOf, money, monthName, toDate } from '../lib/format';
+import { addDays, daysBetween, fmtDate, mondayOf, money, monthName, toDate } from '../lib/format';
+import { exportBackup } from '../lib/exports';
 import { MEAL_TYPES, type MealType } from '../domain/types';
 
 const MEAL_LABEL: Record<MealType, string> = { breakfast: 'Breakfast', lunch: 'Lunch', dinner: 'Dinner', snack: 'Snacks' };
@@ -73,6 +74,13 @@ export function TodayPage() {
       </div>
 
       <DailyChallenge />
+      {data.transactions.length >= 5 && (!data.settings.lastBackupOn || daysBetween(data.settings.lastBackupOn, today) > 30) && (
+        <button className="tile row" style={{ gap: 12, padding: '12px 16px', border: '1px solid var(--border)', background: 'var(--surface-2)', cursor: 'pointer', textAlign: 'left', color: 'var(--text)' }}
+          onClick={() => exportBackup(data)} data-testid="backup-nudge">
+          <span style={{ fontSize: 20 }}>💾</span>
+          <span className="grow"><b>Back up your data</b><span className="xs muted" style={{ display: 'block' }}>{data.settings.lastBackupOn ? `Last backup ${fmtDate(data.settings.lastBackupOn)}` : 'Save a copy to Files or iCloud Drive — takes a second'}</span></span>
+        </button>
+      )}
 
       {(() => {
         const dow = weekdayIndex(today);

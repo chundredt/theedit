@@ -5,6 +5,8 @@ import './styles.css';
 import { applyTheme, savedTheme } from './pages/Settings';
 
 applyTheme(savedTheme());
+// Ask the browser not to clear TheEdit's data when the phone is low on space.
+try { (navigator.storage as any)?.persist?.(); } catch { /* not supported */ }
 // Privacy mode starts on each time the app opens, unless switched off in Settings.
 import { useStore } from './data/store';
 import { usePrivacy } from './lib/privacy';

@@ -238,6 +238,8 @@ export interface Settings {
   onboarded: boolean;
   /** Hide amounts each time the app opens (privacy mode). Default on. */
   hideAmountsOnOpen?: boolean;
+  /** When you last saved a full backup. */
+  lastBackupOn?: ISODate;
   /** Yearly food inflation used to age old prices (%). Default 5. */
   foodInflation?: number;
 }

@@ -29,6 +29,17 @@ export async function download(filename: string, content: string, type = 'text/c
       if (e?.code === 'declined' || e?.code === 'rate_limited') return;
     }
   }
+  // On phones, the share sheet lets you "Save to Files" (iCloud Drive) — more reliable than a download in a home-screen app.
+  try {
+    const file = new File([blob], filename, { type: blob.type });
+    const nav = navigator as Navigator & { canShare?: (d: unknown) => boolean };
+    if (matchMedia('(pointer: coarse)').matches && nav.canShare?.({ files: [file] })) {
+      await navigator.share({ files: [file], title: filename });
+      return;
+    }
+  } catch (e: any) {
+    if (e?.name === 'AbortError') return; // you closed the share sheet
+  }
   const url = URL.createObjectURL(blob);
   const a = document.createElement('a');
   a.href = url;

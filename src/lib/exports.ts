@@ -1,3 +1,4 @@
+import { useStore } from '../data/store';
 import type { AppData, PeriodKey, Transaction } from '../domain/types';
 import { summarize } from '../domain/budget';
 import { periodLabel } from '../domain/period';
@@ -39,5 +40,6 @@ export function exportBudget(data: AppData, key: PeriodKey, today: string) {
 }
 
 export function exportBackup(data: AppData) {
-  download(`theedit-backup-${new Date().toISOString().slice(0, 10)}.json`, JSON.stringify(data, null, 2), 'application/json');
+  useStore.getState().updateSettings({ lastBackupOn: new Date().toISOString().slice(0, 10) });
+  return download(`theedit-backup-${new Date().toISOString().slice(0, 10)}.json`, JSON.stringify(data, null, 2), 'application/json');
 }
