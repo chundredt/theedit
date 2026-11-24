@@ -64,7 +64,7 @@ export function BudgetPage() {
             <div className="row between"><span className="text-2">Total allocated</span><b className="num">{money(s.plannedTotal)}</b></div>
             <div className="row between"><span className="text-2">Income allocated</span><b className="num">{fmtPct(s.allocatedPct)}</b></div>
             <div className="row between"><span className="text-2">Total expenses planned</span><b className="num">{money(s.planned.fixed + s.planned.variable)}</b></div>
-            <div className="row between"><span className="text-2" title="Income after fixed costs and savings">Available for discretionary spending</span><b className="num">{money(s.discretionary)}</b></div>
+            <div className="row between"><span className="text-2">Left after bills & savings<br /><span className="xs muted">For groceries, fuel, eating out and other day-to-day spending</span></span><b className="num">{money(s.discretionary)}</b></div>
             <div className="row between" style={{ borderTop: '1px solid var(--border)', paddingTop: 8 }}>
               <b>{s.overAllocated ? 'Over-allocated by' : 'Still to allocate'}</b>
               <b className={`num ${s.overAllocated ? 'danger' : s.unallocated === 0 ? 'good' : ''}`} data-testid="unallocated">{money(Math.abs(s.unallocated))}</b>
