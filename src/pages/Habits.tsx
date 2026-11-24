@@ -120,7 +120,7 @@ function HabitCalendar() {
 
 const EMOJIS = ['💧', '👟', '📖', '🧘', '🌙', '🍳', '🧾', '🚫', '🥗', '🧴', '💊', '✍️', '🎸', '🙏', '📵', '🤸'];
 
-function HabitForm({ initial, onClose }: { initial?: Habit; onClose: () => void }) {
+export function HabitForm({ initial, onClose }: { initial?: Habit; onClose: () => void }) {
   const { saveHabit, deleteHabit } = useStore.getState();
   const [name, setName] = useState(initial?.name || '');
   const [emoji, setEmoji] = useState(initial?.emoji || '✨');

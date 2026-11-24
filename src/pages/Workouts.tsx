@@ -199,7 +199,7 @@ function RoutineForm({ initial, onClose }: { initial?: Routine; onClose: () => v
   );
 }
 
-function LogForm({ date, onClose }: { date: string; onClose: () => void }) {
+export function LogForm({ date, onClose }: { date: string; onClose: () => void }) {
   const save = useStore((s) => s.saveWorkoutLog);
   const [name, setName] = useState('Walk');
   const [kind, setKind] = useState<WorkoutKind>('cardio');

@@ -9,6 +9,7 @@ import { usePrivacy } from './lib/privacy';
 import { Modal, Toasts } from './components/ui';
 import { TransactionForm } from './components/TransactionForm';
 import { Onboarding } from './components/Onboarding';
+import { QuickAdd } from './components/QuickAdd';
 import { Dashboard } from './pages/Dashboard';
 import { TodayPage } from './pages/Today';
 import { ResetPage } from './pages/Reset';
@@ -76,6 +77,7 @@ export default function App() {
   const saveError = useStore((s) => s.saveError);
   const { addOpen, setAddOpen } = useUI();
   const [more, setMore] = useState(false);
+  const [quick, setQuick] = useState(false);
   const current = ALL.find((n) => n.route === route) || TODAY;
   const Page = current.page;
   const link = (n: NavItem) => (
@@ -88,7 +90,7 @@ export default function App() {
     <div className="app">
       <aside className="sidebar" aria-label="Main navigation">
         <div className="row between" style={{ paddingRight: 4 }}><Brand /><PrivacyButton /></div>
-        <button className="btn primary" style={{ margin: '0 4px 8px' }} onClick={() => setAddOpen(true)}><Plus /> Add expense</button>
+        <button className="btn primary" style={{ margin: '0 4px 8px' }} onClick={() => setQuick(true)}><Plus /> Add</button>
         {link(TODAY)}
         {link(RESET)}
         <div className="nav-group">Money</div>
@@ -121,7 +123,7 @@ export default function App() {
       <nav className="bottom-nav" aria-label="Mobile navigation">
         <button className={route === 'today' ? 'active' : ''} onClick={() => go('today')}><Sun />Today</button>
         <button className={MONEY.some((m) => m.route === route) ? 'active' : ''} onClick={() => go('dashboard')}><Wallet />Money</button>
-        <button onClick={() => setAddOpen(true)} aria-label="Add expense"><span className="add"><Plus /></span></button>
+        <button onClick={() => setQuick(true)} aria-label="Add"><span className="add"><Plus /></span></button>
         <button className={FOOD.some((f) => f.route === route) ? 'active' : ''} onClick={() => go('groceries')}><ShoppingBasket />Food</button>
         <button onClick={() => setMore(true)}><MoreHorizontal />More</button>
       </nav>
@@ -138,6 +140,7 @@ export default function App() {
         </Modal>
       )}
       {addOpen && <TransactionForm onClose={() => setAddOpen(false)} />}
+      {quick && <QuickAdd onClose={() => setQuick(false)} />}
       {!onboarded && <Onboarding />}
       <Toasts />
     </div>

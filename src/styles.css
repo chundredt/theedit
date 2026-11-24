@@ -567,3 +567,11 @@ h2 { font-weight: 800; font-size: 18px; letter-spacing: -0.01em; }
 /* Privacy mode: blur typed amounts until you tap into them */
 .amounts-hidden .input-money input:not(:focus) { color: transparent; text-shadow: 0 0 9px color-mix(in srgb, var(--text) 70%, transparent); }
 .amounts-hidden .recharts-wrapper .recharts-cartesian-axis-tick text { opacity: 0.25; }
+
+/* Quick add sheet */
+.quick-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 10px; }
+.quick-tile { border: 0; border-radius: 22px; padding: 16px; min-height: 104px; display: flex; flex-direction: column; align-items: flex-start; gap: 2px; text-align: left; cursor: pointer; font-size: 15px; }
+.quick-tile:active { transform: scale(0.98); }
+.quick-emoji { font-size: 26px; line-height: 1; margin-bottom: 8px; }
+.quick-income .card { border: 0; padding: 0; background: transparent; }
+@media (min-width: 701px) { .quick-grid { grid-template-columns: repeat(4, minmax(0, 1fr)); } }

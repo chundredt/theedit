@@ -95,7 +95,7 @@ export async function stage2({ page, go, step, assert, money, SHOTS }) {
     const card = page.locator('.card', { hasText: 'Car service' }).last();
     await card.getByRole('button', { name: 'Add money' }).click();
     await page.getByLabel('Amount').fill('1500');
-    await page.getByRole('button', { name: 'Add', exact: true }).click();
+    await page.locator('.modal').getByRole('button', { name: 'Add', exact: true }).click();
     await card.getByText('25%').waitFor();
     await page.screenshot({ path: `${SHOTS}savings.png`, fullPage: true });
   });
@@ -189,5 +189,27 @@ export async function stage2({ page, go, step, assert, money, SHOTS }) {
     await page.getByText('Weekly reset done').waitFor();
     await go('today');
     await page.getByTestId('week-focus').getByText('No takeaways this week').waitFor();
+  });
+
+  await step('+ opens a choice of what to add; tick a habit and log an activity from it', async () => {
+    const c = await page.context().browser().newContext({ viewport: { width: 390, height: 844 } });
+    const p = await c.newPage();
+    await p.goto(page.url().replace(/#.*$/, '#today'));
+    await p.evaluate((d) => localStorage.setItem('randwise:data:v1', d), await page.evaluate(() => localStorage.getItem('randwise:data:v1')));
+    await p.reload();
+    await p.getByRole('button', { name: 'Add', exact: true }).click();
+    await p.locator('.modal').getByRole('button', { name: /Tick habits/ }).click();
+    await p.locator('.modal').getByRole('button', { name: 'Complete Hit my protein' }).click();
+    await p.locator('.modal').getByRole('button', { name: 'Undo Hit my protein' }).waitFor();
+    await p.locator('.modal').getByRole('button', { name: 'Done', exact: true }).click();
+    await p.getByRole('button', { name: 'Add', exact: true }).click();
+    await p.screenshot({ path: `${SHOTS}quick-add.png` });
+    await p.locator('.modal').getByRole('button', { name: /Log activity|Other activity/ }).click();
+    await p.getByPlaceholder('Walk, padel, spin class…').fill('Padel');
+    await p.locator('.modal').getByRole('button', { name: 'Save', exact: true }).click();
+    await p.getByRole('button', { name: 'Add', exact: true }).click();
+    await p.locator('.modal').getByRole('button', { name: /Expense/ }).first().click();
+    await p.getByRole('heading', { name: 'Add expense' }).waitFor();
+    await c.close();
   });
 }

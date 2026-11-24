@@ -82,7 +82,7 @@ export function PantryPage() {
   );
 }
 
-function PantryForm({ initial, onClose }: { initial?: PantryItem; onClose: () => void }) {
+export function PantryForm({ initial, onClose }: { initial?: PantryItem; onClose: () => void }) {
   const data = useData();
   const { savePantry, deletePantry, toast } = useStore.getState();
   const [productId, setProductId] = useState(initial?.productId || '');
