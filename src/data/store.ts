@@ -98,8 +98,8 @@ function initialData(): AppData {
 
 function ensureBudget(d: AppData, key: PeriodKey): Budget {
   if (!d.budgets[key]) {
-    const { inherited: _i, ...b } = resolveBudget(d, key);
-    d.budgets[key] = b;
+    const { inherited: _i, createdOn: _c, ...b } = resolveBudget(d, key);
+    d.budgets[key] = { ...b, createdOn: getToday() };
   }
   return d.budgets[key];
 }
@@ -447,8 +447,13 @@ export const useStore = create<State>((set, get) => {
             { name: 'Allowance', kind: 'allowance' as const, amount: setup.allowance },
           ].filter((l) => l.amount > 0).map((l) => ({ ...l, id: uid(), amount: round2(l.amount), payDay: setup.startDay })),
           allocations: setup.grocery > 0 ? { groceries: round2(setup.grocery) } : {},
+          createdOn: getToday(),
         };
-        if (upcoming) d.budgets[upcoming] = { ...structuredClone(d.budgets[key]), period: upcoming };
+        // Setting up just before payday: the first real budget is the one starting on payday.
+        if (upcoming) {
+          d.budgets[upcoming] = { ...d.budgets[key], period: upcoming };
+          delete d.budgets[key];
+        }
       }
       commit(d);
     },

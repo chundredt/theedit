@@ -6,9 +6,9 @@ import { IncomeCard } from '../components/IncomeCard';
 import { getToday, useData, useStore } from '../data/store';
 import { usePeriod } from '../lib/ui-state';
 import { resolveBudget, summarize, type CategoryRow } from '../domain/budget';
-import { periodKeyFor, periodLabel, shiftPeriod } from '../domain/period';
+import { periodKeyFor, periodLabel, periodStart, shiftPeriod } from '../domain/period';
 import { PAYMENT_METHODS, type Category, type CategoryGroup, type PaymentMethod } from '../domain/types';
-import { fmtPct, money, ordinal } from '../lib/format';
+import { fmtDate, fmtPct, money, ordinal } from '../lib/format';
 import { PALETTE } from '../data/seed';
 
 const GROUPS: { id: CategoryGroup; title: string; blurb: string; color: string }[] = [
@@ -37,6 +37,12 @@ export function BudgetPage() {
         {hasPrev && <button className="btn" onClick={() => copyBudget(prev, period)}><Copy /> Copy {periodLabel(prev, true)}</button>}
       </PageHeader>
 
+      {period === shiftPeriod(periodKeyFor(today, data.settings.periodStartDay), 1) && (
+        <div style={{ marginBottom: 16 }}>
+          <Banner tone="sage">You're planning <b>{periodLabel(period)}</b>, which starts on payday ({fmtDate(periodStart(period, data.settings.periodStartDay))}). Mark your salary and allowance as received when they're paid in.
+            <button className="btn sm" style={{ marginLeft: 8 }} onClick={() => setPeriod(shiftPeriod(period, -1))}>View {periodLabel(shiftPeriod(period, -1))}</button></Banner>
+        </div>
+      )}
       {period === periodKeyFor(today, data.settings.periodStartDay) && s.daysLeft > 0 && s.daysLeft <= 5 && (
         <div style={{ marginBottom: 16 }}>
           <Banner tone="sage">Payday is {s.daysLeft === 1 ? 'tomorrow' : `in ${s.daysLeft} days`}. <button className="btn sm" style={{ marginLeft: 8 }} onClick={() => setPeriod(shiftPeriod(period, 1))}>Plan {periodLabel(shiftPeriod(period, 1))}</button></Banner>

@@ -1,7 +1,7 @@
 import { create } from 'zustand';
 import { useEffect, useState } from 'react';
 import { getToday, useStore } from '../data/store';
-import { periodKeyFor } from '../domain/period';
+import { daysLeft, periodKeyFor, shiftPeriod } from '../domain/period';
 import { mondayOf } from './format';
 import type { PeriodKey, WeekKey } from '../domain/types';
 
@@ -29,7 +29,21 @@ export function usePeriod(): [PeriodKey, (p: PeriodKey) => void] {
   const startDay = useStore((s) => s.data.settings.periodStartDay);
   const period = useUI((s) => s.period);
   const setPeriod = useUI((s) => s.setPeriod);
-  return [period || periodKeyFor(getToday(), startDay), setPeriod];
+  const budgets = useStore((s) => s.data.budgets);
+  return [period || defaultPeriod(getToday(), startDay, budgets), setPeriod];
+}
+
+/**
+ * The month to show when nothing is picked: normally the one containing today. In the last
+ * two days before payday (or when only next month has been set up) show the coming month,
+ * because that's the one you're planning.
+ */
+export function defaultPeriod(today: string, startDay: number, budgets: Record<string, unknown>): PeriodKey {
+  const current = periodKeyFor(today, startDay);
+  const next = shiftPeriod(current, 1);
+  if (startDay > 1 && daysLeft(current, startDay, today) <= 2) return next;
+  if (!budgets[current] && budgets[next]) return next;
+  return current;
 }
 
 export type Route =

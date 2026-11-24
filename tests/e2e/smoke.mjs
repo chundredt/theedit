@@ -6,7 +6,7 @@ const { chromium } = require('playwright');
 import { mkdirSync } from 'node:fs';
 
 const BASE = process.env.BASE_URL || 'http://localhost:4173/';
-const TODAY = '2026-11-24';
+const TODAY = '2026-12-03';
 const SHOTS = new URL('./screens/', import.meta.url).pathname;
 mkdirSync(SHOTS, { recursive: true });
 const STAGE = process.env.STAGE || 'all';
@@ -52,8 +52,8 @@ await step('first run shows onboarding and can set up a fresh budget', async () 
 await step('grocery page splits R2,000 into weekly/daily allowances', async () => {
   await go('groceries');
   const weekly = money(await page.getByTestId('grocery-weekly').textContent());
-  // Payday cycle 25 Oct – 24 Nov = 31 days → 2000 × 7 ÷ 31
-  assert(Math.abs(weekly - 451.61) < 0.01, `weekly should be 451.61, got ${weekly}`);
+  // December budget = 25 Nov – 24 Dec = 30 days → 2000 × 7 ÷ 30
+  assert(Math.abs(weekly - 466.67) < 0.01, `weekly should be 466.67, got ${weekly}`);
 });
 
 await step('adding an expense updates grocery remaining and persists after reload', async () => {
@@ -137,6 +137,22 @@ if (STAGE !== '1') {
   const { stage2 } = await import('./stage2.mjs');
   await stage2({ page, go, step, assert, money, SHOTS });
 }
+
+await step('setting up the day before payday opens next month with no late-income warnings', async () => {
+  const c = await browser.newContext({ viewport: { width: 1280, height: 900 } });
+  const p = await c.newPage();
+  await p.goto(`${BASE}?today=2026-11-24#budget`);
+  await p.getByText('Set up my own budget').click();
+  await p.getByText('First budget: December 2026 (25/11/2026 – 24/12/2026)').waitFor();
+  await p.getByLabel('Salary').fill('20000');
+  await p.getByLabel('Allowance').fill('3000');
+  await p.getByRole('button', { name: 'Start budgeting' }).click();
+  await p.getByText("You're planning").waitFor();
+  assert((await p.locator('.period-nav .lbl').first().textContent()).startsWith('December 2026'), 'budget page should show December');
+  assert((await p.getByText('not marked received').count()) === 0, 'no late warnings expected');
+  assert((await p.getByText('Due 25/11/2026').count()) === 2, 'salary and allowance should be due 25/11/2026');
+  await c.close();
+});
 
 await step('mobile layout has bottom navigation and no horizontal scroll', async () => {
   const m = await browser.newContext({ viewport: { width: 390, height: 844 }, deviceScaleFactor: 1 });

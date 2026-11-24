@@ -59,6 +59,8 @@ export interface Budget {
   period: PeriodKey;
   income: IncomeLine[];
   allocations: Record<ID, number>;
+  /** When this month's budget was first saved; pay days before this aren't flagged as late. */
+  createdOn?: ISODate;
 }
 
 export interface Transaction {

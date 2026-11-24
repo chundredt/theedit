@@ -125,7 +125,7 @@ export function summarize(data: AppData, key: PeriodKey, today: ISODate): Period
       received,
       value: received ? line.received! : line.amount || 0,
       difference: received ? round2(line.received! - (line.amount || 0)) : 0,
-      late: !received && !!payDate && payDate < today,
+      late: !received && !!payDate && payDate < today && !budget.inherited && !(budget.createdOn && budget.createdOn > payDate),
     };
   });
   const income = round2(incomeLines.reduce((s, i) => s + i.value, 0));
