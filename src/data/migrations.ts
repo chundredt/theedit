@@ -3,7 +3,7 @@ import { defaultRoutines, defaultSchedule } from './seed-wellness';
 import { extraProducts } from './seed-ingredients';
 
 /** Bump when the stored shape changes, and add a step below. */
-export const CURRENT_VERSION = 6;
+export const CURRENT_VERSION = 7;
 
 type Migration = (data: any) => any;
 const MIGRATIONS: Record<number, Migration> = {
@@ -31,6 +31,8 @@ const MIGRATIONS: Record<number, Migration> = {
     d.products.push(...extraProducts().filter((p) => !have.has(p.id)));
     return d;
   },
+  // v7: prices that adjust themselves.
+  7: (d) => ({ storeFactors: {}, ...d }),
 };
 
 export function migrate(raw: any): AppData {

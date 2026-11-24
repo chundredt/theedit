@@ -238,6 +238,8 @@ export interface Settings {
   onboarded: boolean;
   /** Hide amounts each time the app opens (privacy mode). Default on. */
   hideAmountsOnOpen?: boolean;
+  /** Yearly food inflation used to age old prices (%). Default 5. */
+  foodInflation?: number;
 }
 
 export interface AppData {
@@ -266,6 +268,8 @@ export interface AppData {
   resets: Record<WeekKey, WeeklyReset>;
   /** Daily challenge per day: which one, how many swaps, done or not. */
   challenges: Record<ISODate, { id: string; swaps: number; done: boolean }>;
+  /** Learned per-store correction from real shop totals (1 = estimates match). */
+  storeFactors: Record<ID, { factor: number; shops: number; updatedOn: ISODate }>;
 }
 
 export interface WeeklyReset {

@@ -150,11 +150,12 @@ function CompleteShop({ week, byStore, onClose }: { week: string; byStore: { id:
   const [date, setDate] = useState<string | undefined>(getToday());
   const [leftovers, setLeftovers] = useState(true);
   const [deduct, setDeduct] = useState(true);
+  const [learn, setLearn] = useState(true);
   const rows = [...byStore, ...(extraStore && !byStore.some((b) => b.id === extraStore) ? [{ id: extraStore, name: data.stores.find((s) => s.id === extraStore)!.name, est: 0 }] : [])];
   const total = Object.values(amounts).reduce<number>((s, v) => s + (Number(v) || 0), 0);
   return (
     <Modal title="Finish shop" sub="Enter what you actually paid (from your till slip). This records the spend against your grocery budget." onClose={onClose}
-      footer={<><button className="btn" onClick={onClose}>Cancel</button><button className="btn primary" disabled={!date || total <= 0} onClick={() => { completeShop(week, rows.map((r) => ({ storeId: r.id, amount: Number(amounts[r.id]) || 0 })), date!, { leftovers, deductPantry: deduct }); onClose(); }}>Record {money(total)}</button></>}>
+      footer={<><button className="btn" onClick={onClose}>Cancel</button><button className="btn primary" disabled={!date || total <= 0} onClick={() => { completeShop(week, rows.map((r) => ({ storeId: r.id, amount: Number(amounts[r.id]) || 0 })), date!, { leftovers, deductPantry: deduct, learn }); onClose(); }}>Record {money(total)}</button></>}>
       <div className="stack">
         {rows.map((r) => (
           <Field key={r.id} label={r.name} help={r.est ? `Estimated ${money(r.est)}` : undefined}>
@@ -167,6 +168,7 @@ function CompleteShop({ week, byStore, onClose }: { week: string; byStore: { id:
         <Field label="Date"><DateInput value={date} onChange={setDate} required /></Field>
         <label className="check"><input type="checkbox" checked={deduct} onChange={(e) => setDeduct(e.target.checked)} /> Use up the pantry items this week's meals need</label>
         <label className="check"><input type="checkbox" checked={leftovers} onChange={(e) => setLeftovers(e.target.checked)} /> Add leftover pack quantities of ticked items to the pantry</label>
+        <label className="check"><input type="checkbox" checked={learn} onChange={(e) => setLearn(e.target.checked)} /> Mostly items from this list — use it to fine-tune prices</label>
       </div>
     </Modal>
   );

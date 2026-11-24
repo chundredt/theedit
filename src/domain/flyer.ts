@@ -52,7 +52,7 @@ function cleanName(s: string): string {
     .trim();
 }
 
-const STOP = new Set(['the', 'and', 'with', 'of', 'in', 'for', 'fresh', 'pack', 'woolworths', 'checkers', 'ww', 'flm', 'sixty60', 'select', 'value', 'brand', 'g', 'kg', 'ml', 'l']);
+const STOP = new Set(['sauce', 'tin', 'frozen', 'mix', 'large', 'small', 'the', 'and', 'with', 'of', 'in', 'for', 'fresh', 'pack', 'woolworths', 'checkers', 'ww', 'flm', 'sixty60', 'select', 'value', 'brand', 'g', 'kg', 'ml', 'l']);
 
 export function tokens(s: string): string[] {
   return s

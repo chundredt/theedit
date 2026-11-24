@@ -82,6 +82,9 @@ export function SettingsPage() {
               <label className="check"><input type="checkbox" checked={s.dairyFree} onChange={(e) => updateSettings({ dairyFree: e.target.checked })} /> Dairy</label>
               <label className="check"><input type="checkbox" checked={s.glutenFree} onChange={(e) => updateSettings({ glutenFree: e.target.checked })} /> Gluten</label>
             </div>
+            <Field label="Food inflation (% a year)" help="Used to age prices you haven't confirmed in a while" className="full">
+              <input className="input" type="number" min={0} max={20} step={0.5} defaultValue={s.foodInflation ?? 5} onBlur={(e) => updateSettings({ foodInflation: Math.max(0, Math.min(20, Number(e.target.value) || 0)) })} aria-label="Food inflation" />
+            </Field>
             <Field label="Daily calorie target"><input className="input" type="number" min={1000} max={5000} step={50} defaultValue={s.kcalTarget} onBlur={(e) => updateSettings({ kcalTarget: Number(e.target.value) || 2000 })} /></Field>
             <Field label="Daily protein target (g)" help="≈1.6 g per kg body weight if you train"><input className="input" type="number" min={30} max={300} defaultValue={s.proteinTarget} onBlur={(e) => updateSettings({ proteinTarget: Number(e.target.value) || 100 })} /></Field>
             <Field label="Ingredients I don't like" className="full" help="Recipes containing these are hidden from suggestions and auto-fill">

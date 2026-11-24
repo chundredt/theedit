@@ -33,6 +33,41 @@ export interface StorePrice {
   stale: boolean;
   /** The regular price at this store, if known, when the current price is a special. */
   regular?: PriceRecord;
+  /** True when the price was adjusted (store correction and/or inflation) rather than used as recorded. */
+  adjusted: boolean;
+  /** The price as recorded, before any adjustment. */
+  recordedPrice: number;
+}
+
+export const FRESH_DAYS = 30;
+const MIN_FACTOR = 0.7;
+const MAX_FACTOR = 1.4;
+
+/**
+ * Prices look after themselves:
+ * - specials and prices you confirmed in the last 30 days (till slip, typed, catalogue) are used as-is;
+ * - anything older (or a sample price) is scaled by what this store has really been charging you
+ *   (learned from your shop totals) and aged by yearly food inflation.
+ */
+export function adjustedPrice(data: AppData, p: PriceRecord, today: ISODate): { price: number; adjusted: boolean } {
+  if (p.isSpecial) return { price: p.price, adjusted: false };
+  const age = Math.max(0, daysBetween(p.verifiedOn, today));
+  if (p.source !== 'sample' && age <= FRESH_DAYS) return { price: p.price, adjusted: false };
+  const factor = data.storeFactors?.[p.storeId]?.factor ?? 1;
+  const inflation = Math.pow(1 + (data.settings.foodInflation ?? 5) / 100, age / 365);
+  const price = Math.round(p.price * factor * inflation * 100) / 100;
+  return { price, adjusted: Math.abs(price - p.price) >= 0.01 };
+}
+
+/**
+ * After a shop: compare what you paid with what the app expected and nudge the store's factor.
+ * A moving average keeps one odd shop (a braai, a stock-up) from swinging prices too far.
+ */
+export function learnFactor(prev: number, shops: number, estimate: number, actual: number): number {
+  if (!(estimate >= 100) || !(actual > 0)) return prev;
+  const observed = Math.min(MAX_FACTOR, Math.max(MIN_FACTOR, prev * (actual / estimate)));
+  const weight = shops === 0 ? 0.6 : shops < 3 ? 0.4 : 0.25;
+  return Math.round((prev + (observed - prev) * weight) * 1000) / 1000;
 }
 
 /** The current price per store for a product: an active special beats the latest regular price. */
@@ -43,14 +78,19 @@ export function storePrices(data: AppData, productId: ID, today: ISODate): Store
     if (!recs.length) continue;
     const specials = recs.filter((r) => r.isSpecial).sort((a, b) => a.price / a.packSize - b.price / b.packSize);
     const regulars = recs.filter((r) => !r.isSpecial).sort((a, b) => b.verifiedOn.localeCompare(a.verifiedOn));
-    const record = specials[0] || regulars[0];
+    const original = specials[0] || regulars[0];
+    const adj = adjustedPrice(data, original, today);
+    const record = adj.adjusted ? { ...original, price: adj.price } : original;
+    const regular = specials[0] && regulars[0] ? { ...regulars[0], price: adjustedPrice(data, regulars[0], today).price } : undefined;
     out.push({
       store,
       record,
       perKg: (record.price / record.packSize) * 1000,
       isSpecial: record.isSpecial,
       stale: daysBetween(record.verifiedOn, today) > STALE_DAYS,
-      regular: specials[0] ? regulars[0] : undefined,
+      regular,
+      adjusted: adj.adjusted,
+      recordedPrice: original.price,
     });
   }
   return out.sort((a, b) => a.perKg - b.perKg);

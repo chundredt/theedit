@@ -257,4 +257,25 @@ export async function stage2({ page, go, step, assert, money, SHOTS }) {
     assert(chosen === 'Peri-peri sauce', `new ingredient should be selected, got "${chosen}"`);
     await page.keyboard.press('Escape');
   });
+
+  await step('prices learn from a finished shop', async () => {
+    await go('prices');
+    await page.locator('.tile', { hasText: 'Prices look after themselves' }).getByText(/· 1 shop/).waitFor();
+  });
+
+  await step('till slip: paste the text, review the matches, and save the prices', async () => {
+    await go('prices');
+    await page.getByRole('button', { name: 'Scan till slip' }).click();
+    await page.getByText('Or paste the text').click();
+    await page.locator('.modal textarea').fill('WOOLWORTHS\n24/11/2026\nCLOVER LOW FAT MILK 2L   31.49\nBANANAS\n1.000 kg @ 24.99/kg   24.99\nTOTAL   56.48');
+    await page.getByRole('button', { name: 'Read text' }).click();
+    await page.getByRole('button', { name: 'Save 2 prices' }).waitFor();
+    assert((await page.getByLabel('Slip store').inputValue()) === 'woolworths', 'store should be read from the slip');
+    await page.getByRole('button', { name: 'Save 2 prices' }).click();
+    await page.getByText('2 prices updated from your till slip').waitFor();
+    await page.getByRole('tab', { name: 'Compare prices' }).click();
+    await page.getByPlaceholder('Search products').fill('Low-fat milk');
+    await page.getByText('till slip 24/11/2026').first().waitFor();
+    await page.getByText('R31.49').first().waitFor();
+  });
 }

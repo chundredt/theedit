@@ -605,3 +605,5 @@ h2 { font-weight: 800; font-size: 18px; letter-spacing: -0.01em; }
 .challenge-btn.primary { background: #111; color: #fff; }
 .challenge-btn.done { background: var(--good); color: #fff; }
 @media (max-width: 520px) { .challenge-main { font-size: 21px; } .challenge-card::after { width: 120px; height: 120px; right: -50px; } }
+.receipt-row { display: flex; align-items: flex-end; gap: 8px; padding: 10px 0; border-bottom: 1px solid var(--border); }
+.receipt-row > input[type=checkbox] { width: 20px; height: 20px; margin-bottom: 11px; accent-color: var(--ink); flex-shrink: 0; }

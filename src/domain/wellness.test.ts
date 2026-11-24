@@ -152,6 +152,6 @@ describe('ingredient list', () => {
     const m = migrate(d);
     expect(m.products.filter((p) => p.id === 'boerewors')).toHaveLength(1);
     expect(m.products.length).toBe(before + 2);
-    expect(m.version).toBe(6);
+    expect(m.version).toBeGreaterThanOrEqual(6);
   });
 });

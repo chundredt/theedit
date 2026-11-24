@@ -262,6 +262,7 @@ export function emptyData(today: string): AppData {
     workoutLogs: [],
     resets: {},
     challenges: {},
+    storeFactors: {},
   };
 }
 

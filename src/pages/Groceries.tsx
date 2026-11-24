@@ -1,6 +1,7 @@
 import { useMemo, useState } from 'react';
 import { Bar, BarChart, CartesianGrid, Cell, ResponsiveContainer, Tooltip, XAxis, YAxis, ReferenceLine } from 'recharts';
-import { CalendarDays, ListChecks, Plus, Tags, ShoppingBasket } from 'lucide-react';
+import { CalendarDays, Camera, ListChecks, Plus, Tags, ShoppingBasket } from 'lucide-react';
+import { ReceiptScan } from '../components/ReceiptScan';
 import { Banner, Card, ChartTip, Empty, MoneyInput, PageHeader, PeriodNav, Progress } from '../components/ui';
 import { TransactionForm } from '../components/TransactionForm';
 import { getToday, useData, useStore } from '../data/store';
@@ -23,6 +24,7 @@ export function GroceriesPage() {
   const g = useMemo(() => groceryOverview(data, period, today), [data, period, today]);
   const isCurrent = period === periodKeyFor(today, data.settings.periodStartDay);
   const [adding, setAdding] = useState<Transaction | 'new' | null>(null);
+  const [scanning, setScanning] = useState(false);
   const colors = useCssVars(['series-1', 'danger', 'muted', 'warn']);
   const txs = transactionsIn(data, period).filter((t) => t.categoryId === g.categoryId).sort((a, b) => b.date.localeCompare(a.date));
   const byStore = useMemo(() => {
@@ -39,6 +41,7 @@ export function GroceriesPage() {
     <>
       <PageHeader title="Grocery budget" sub="Know what you can spend this week, not just this month.">
         <PeriodNav value={period} onChange={setPeriod} startDay={data.settings.periodStartDay} />
+        <button className="btn" onClick={() => setScanning(true)}><Camera /> Scan till slip</button>
         <button className="btn primary" onClick={() => setAdding('new')}><Plus /> Add purchase</button>
       </PageHeader>
 
@@ -128,6 +131,7 @@ export function GroceriesPage() {
           </Card>
         </>
       )}
+      {scanning && <ReceiptScan onClose={() => setScanning(false)} />}
       {adding && <TransactionForm initial={adding === 'new' ? undefined : adding} defaults={{ categoryId: g.categoryId }} onClose={() => setAdding(null)} />}
     </>
   );

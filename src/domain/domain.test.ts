@@ -299,3 +299,60 @@ describe('demo data', () => {
     expect(Object.values(d.mealPlans)[0].days.some((x) => x.dinner)).toBe(true);
   });
 });
+
+import { parseReceiptText, receiptRows } from './receipt';
+import { learnFactor, adjustedPrice } from './prices';
+
+describe('self-adjusting prices', () => {
+  it('learns a store correction from shop totals, gently and within limits', () => {
+    expect(learnFactor(1, 0, 500, 550)).toBe(1.06); // 10% over, first shop counts 60%
+    expect(learnFactor(1.06, 3, 500, 500)).toBe(1.06); // spot on → unchanged
+    expect(learnFactor(1, 0, 500, 5000)).toBe(1.24); // a stock-up can't push past the cap (1.4)
+    expect(learnFactor(1, 0, 50, 80)).toBe(1); // too small a shop to learn from
+  });
+  it('uses fresh confirmed prices as-is and adjusts old or sample ones', () => {
+    const d = emptyData(TODAY);
+    d.storeFactors = { checkers: { factor: 1.1, shops: 2, updatedOn: TODAY } };
+    const fresh = { id: 'x', productId: 'rice', storeId: 'checkers', price: 50, packSize: 2000, isSpecial: false, verifiedOn: '2026-11-20', source: 'receipt' as const };
+    expect(adjustedPrice(d, fresh, TODAY)).toEqual({ price: 50, adjusted: false });
+    const old = { ...fresh, verifiedOn: '2025-11-24' }; // a year old: × 1.1 store × 1.05 inflation
+    expect(adjustedPrice(d, old, TODAY).price).toBeCloseTo(57.75, 1);
+  });
+});
+
+describe('till slip text', () => {
+  const products = emptyData(TODAY).products;
+  it('reads items, multiples, weighed items, date and total; skips payment lines', () => {
+    const r = parseReceiptText([
+      'CHECKERS HYPER',
+      '24/11/2026 18:42',
+      'CLOVER LOW FAT MILK 2L        34.99',
+      'KOO BAKED BEANS 410G          37.98',
+      '2 @ 18.99',
+      'BANANAS',
+      '1.234 kg @ 21.99/kg           27.14',
+      'LARGE EGGS 18                 74.99',
+      'XTRA SAVINGS                  -5.00',
+      'TOTAL                        175.10',
+      'CARD                         175.10',
+    ].join('\n'));
+    expect(r.date).toBe('2026-11-24');
+    expect(r.total).toBe(175.1);
+    expect(r.items.map((i) => i.name)).toEqual(['CLOVER LOW FAT MILK 2L', 'KOO BAKED BEANS 410G', 'BANANAS', 'LARGE EGGS 18']);
+    const rows = receiptRows(r, products);
+    expect(rows[0]).toMatchObject({ productId: 'milk', price: 34.99 });
+    expect(rows[1]).toMatchObject({ productId: 'baked-beans', price: 18.99 });
+    expect(rows[2]).toMatchObject({ productId: 'bananas', packSize: 1000, price: 21.99 });
+    expect(rows[3]).toMatchObject({ productId: 'eggs', price: 74.99 });
+  });
+});
+
+describe('matching slip items', () => {
+  it('does not match on a generic word like "sauce" alone', () => {
+    const products = emptyData(TODAY).products;
+    const rows = receiptRows({ items: [{ name: 'PERI-PERI SAUCE 250ML', price: 42.99 }, { name: 'KOO BAKED BEANS 410G', price: 18.99 }] }, products);
+    expect(rows[0].productId).toBe('');
+    expect(rows[0].include).toBe(false);
+    expect(rows[1].productId).toBe('baked-beans');
+  });
+});

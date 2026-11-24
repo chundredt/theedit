@@ -1,4 +1,5 @@
 import { useMemo, useRef, useState } from 'react';
+import { ReceiptScan } from '../components/ReceiptScan';
 import { Camera, ClipboardPaste, ExternalLink, Link2, Pencil, Plus, Search, Tags, Trash2, Store as StoreIcon, Package } from 'lucide-react';
 import { Banner, Card, Empty, Field, Modal, NumberInput, PageHeader, Seg } from '../components/ui';
 import { DateInput } from '../components/DateInput';
@@ -17,25 +18,22 @@ export function PricesPage() {
   const [tab, setTab] = useState<Tab>('specials');
   const [editing, setEditing] = useState<{ initial?: PriceRecord; defaults?: Partial<PriceRecord> } | null>(null);
   const sampleCount = data.prices.filter((p) => p.source === 'sample').length;
+  const [scanning, setScanning] = useState(false);
   return (
     <>
       <PageHeader title="Prices & specials" sub="Your own price book for Checkers, Food Lover's Market, Woolworths and any other store.">
+        <button className="btn" onClick={() => setScanning(true)}><Camera /> Scan till slip</button>
         <button className="btn primary" onClick={() => setEditing({})}><Plus /> Add price</button>
       </PageHeader>
       <div className="row wrap between" style={{ marginBottom: 16 }}>
         <Seg value={tab} onChange={setTab} options={[{ value: 'specials', label: 'Specials' }, { value: 'compare', label: 'Compare prices' }, { value: 'import', label: 'Import catalogue' }, { value: 'manage', label: 'Products & stores' }]} />
       </div>
-      {sampleCount > 0 && (
-        <div style={{ marginBottom: 16 }}>
-          <Banner tone="warn">
-            <b>{sampleCount} prices are samples</b>, included so meal costs work on day one. They are not live store prices — there are no public price feeds for these retailers. Update them from your till slip or a catalogue; anything older than {STALE_DAYS} days is marked “verify”.
-          </Banner>
-        </div>
-      )}
+      <AutoPrices sampleCount={sampleCount} />
       {tab === 'specials' && <Specials onEdit={(initial) => setEditing({ initial })} onAdd={() => setEditing({ defaults: { isSpecial: true, specialEnds: addDays(getToday(), 7) } })} />}
       {tab === 'compare' && <Compare onEdit={(initial, defaults) => setEditing({ initial, defaults })} />}
       {tab === 'import' && <Import />}
       {tab === 'manage' && <Manage />}
+      {scanning && <ReceiptScan onClose={() => setScanning(false)} />}
       {editing && <PriceForm initial={editing.initial} defaults={editing.defaults} onClose={() => setEditing(null)} />}
     </>
   );
@@ -136,8 +134,8 @@ function Compare({ onEdit }: { onEdit: (initial?: PriceRecord, defaults?: Partia
                         {x ? (
                           <>
                             <b className="num">{money(x.record.price)}</b>{x.isSpecial && <span className="chip good" style={{ marginLeft: 6 }}>Special</span>}
-                            <div className={`xs ${x.stale || x.record.source === 'sample' ? 'warn' : 'muted'}`}>{grams(x.record.packSize)} · {money(x.perKg)}/kg</div>
-                            <div className={`xs ${x.stale || x.record.source === 'sample' ? 'warn' : 'muted'}`}>{x.record.source === 'sample' ? 'sample' : 'verified'} {fmtDate(x.record.verifiedOn)}</div>
+                            <div className="xs muted">{grams(x.record.packSize)} · {money(x.perKg)}/kg</div>
+                            <div className="xs muted">{x.adjusted ? 'estimate (auto-adjusted)' : x.record.source === 'receipt' ? `till slip ${fmtDate(x.record.verifiedOn)}` : `checked ${fmtDate(x.record.verifiedOn)}`}</div>
                           </>
                         ) : <span className="muted small">+ add</span>}
                       </td>
@@ -364,5 +362,29 @@ function StoreForm({ initial, onClose }: { initial?: Store; onClose: () => void 
         <Field label="Colour" className="full"><div className="row wrap">{PALETTE.map((c) => <button type="button" key={c} onClick={() => setColor(c)} aria-label={c} style={{ width: 28, height: 28, borderRadius: 8, background: c, border: color === c ? '3px solid var(--text)' : '3px solid transparent', cursor: 'pointer' }} />)}</div></Field>
       </div>
     </Modal>
+  );
+}
+
+/** Explains how prices keep themselves current, and what's been learned per store. */
+function AutoPrices({ sampleCount }: { sampleCount: number }) {
+  const data = useData();
+  const learned = data.stores.map((s) => ({ s, f: data.storeFactors?.[s.id] })).filter((x) => x.f && x.f.shops > 0);
+  const slips = data.prices.filter((p) => p.source === 'receipt').length;
+  return (
+    <div className="tile pastel bg-sky" style={{ marginBottom: 16 }}>
+      <div className="eyebrow">Prices look after themselves</div>
+      <p className="small mt-8" style={{ maxWidth: 720 }}>
+        When you finish a shop, TheEdit compares what you paid with its estimate and adjusts that store's prices. Older prices also rise with food inflation ({data.settings.foodInflation ?? 5}% a year). Scan a till slip any time for exact prices.
+      </p>
+      <div className="row wrap mt-12" style={{ gap: 6 }}>
+        {learned.length ? learned.map(({ s, f }) => (
+          <span key={s.id} className="chip" style={{ background: 'rgba(255,255,255,0.7)', color: '#111' }}>
+            <span className="store-dot" style={{ background: s.color }} />{s.name}: {f!.factor > 1.005 ? `+${Math.round((f!.factor - 1) * 100)}%` : f!.factor < 0.995 ? `−${Math.round((1 - f!.factor) * 100)}%` : 'on target'} · {f!.shops} shop{f!.shops === 1 ? '' : 's'}
+          </span>
+        )) : <span className="small" style={{ opacity: 0.7 }}>Nothing learned yet — finish your first shop from the shopping list.</span>}
+        {slips > 0 && <span className="chip" style={{ background: 'rgba(255,255,255,0.7)', color: '#111' }}>📸 {slips} prices from till slips</span>}
+        {sampleCount > 0 && <span className="chip" style={{ background: 'rgba(255,255,255,0.7)', color: '#111' }}>{sampleCount} starting estimates</span>}
+      </div>
+    </div>
   );
 }

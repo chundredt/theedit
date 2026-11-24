@@ -11,6 +11,7 @@ import { emptyWeek, buildShoppingList, weeklyNeeds } from '../domain/shopping';
 import { uid } from '../lib/id';
 import { round2, toISO, todayISO } from '../lib/format';
 import { goalProgress } from '../domain/savings';
+import { learnFactor } from '../domain/prices';
 import { groceryCategory } from '../domain/budget';
 import { daysLeft, periodKeyFor, shiftPeriod } from '../domain/period';
 
@@ -82,7 +83,9 @@ interface State {
   addExtra(week: WeekKey, name: string): void;
   toggleExtra(week: WeekKey, id: ID): void;
   removeExtra(week: WeekKey, id: ID): void;
-  completeShop(week: WeekKey, spend: { storeId: ID; amount: number }[], date: ISODate, opts: { leftovers: boolean; deductPantry: boolean }): void;
+  completeShop(week: WeekKey, spend: { storeId: ID; amount: number }[], date: ISODate, opts: { leftovers: boolean; deductPantry: boolean; learn?: boolean }): void;
+  /** Save prices read from a till slip, and optionally record the shop as a grocery expense. */
+  saveReceipt(r: { storeId: ID; date: ISODate; total?: number; rows: { productId: ID; price: number; packSize: number }[]; recordExpense: boolean }): void;
   savePantry(p: Omit<PantryItem, 'id' | 'addedOn'> & { id?: ID; addedOn?: ISODate }): void;
   deletePantry(id: ID): void;
   // Habits & workouts
@@ -462,9 +465,32 @@ export const useStore = create<State>((set, get) => {
               d.pantry.push({ id: uid(), productId: it.product.id, quantity: it.leftover, addedOn: date });
           }
         }
+        // Learn how far off the estimates were at each store, so prices correct themselves.
+        if (opts.learn !== false) {
+          for (const e of spend) {
+            const est = list.byStore.find((b) => b.store.id === e.storeId)?.total || 0;
+            const prev = d.storeFactors[e.storeId] || { factor: 1, shops: 0, updatedOn: date };
+            const factor = learnFactor(prev.factor, prev.shops, est, e.amount);
+            if (factor !== prev.factor || est >= 100) d.storeFactors[e.storeId] = { factor, shops: prev.shops + (est >= 100 && e.amount > 0 ? 1 : 0), updatedOn: date };
+          }
+        }
         s.completedOn = date;
       });
       get().toast('Shop recorded — grocery budget and pantry updated');
+    },
+    saveReceipt(r) {
+      mutate((d) => {
+        for (const row of r.rows) {
+          if (!row.productId || !(row.price > 0) || !(row.packSize > 0)) continue;
+          d.prices.push({ id: uid(), productId: row.productId, storeId: r.storeId, price: round2(row.price), packSize: row.packSize, isSpecial: false, verifiedOn: r.date, source: 'receipt' });
+        }
+        const cat = groceryCategory(d);
+        if (r.recordExpense && r.total && r.total > 0 && cat) {
+          const store = d.stores.find((x) => x.id === r.storeId);
+          d.transactions.unshift({ id: uid(), date: r.date, amount: round2(r.total), description: `${store?.name || 'Grocery'} shop`, categoryId: cat.id, method: 'Debit card', storeId: r.storeId, notes: 'From till slip', createdAt: new Date().toISOString() });
+        }
+      });
+      get().toast(`${r.rows.length} price${r.rows.length === 1 ? '' : 's'} updated from your till slip`);
     },
     savePantry(p) {
       mutate((d) => {
