@@ -1,8 +1,9 @@
 import type { AppData } from '../domain/types';
 import { defaultRoutines, defaultSchedule } from './seed-wellness';
+import { extraProducts } from './seed-ingredients';
 
 /** Bump when the stored shape changes, and add a step below. */
-export const CURRENT_VERSION = 5;
+export const CURRENT_VERSION = 6;
 
 type Migration = (data: any) => any;
 const MIGRATIONS: Record<number, Migration> = {
@@ -24,6 +25,12 @@ const MIGRATIONS: Record<number, Migration> = {
   },
   // v5: daily challenges.
   5: (d) => ({ challenges: {}, ...d }),
+  // v6: more built-in ingredients (only adds ones you don't have).
+  6: (d) => {
+    const have = new Set(d.products.map((p: any) => p.id));
+    d.products.push(...extraProducts().filter((p) => !have.has(p.id)));
+    return d;
+  },
 };
 
 export function migrate(raw: any): AppData {

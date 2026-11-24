@@ -4,6 +4,7 @@ import { addDays, mondayOf, round2 } from '../lib/format';
 import { dueDateInPeriod, periodKeyFor, periodStart, shiftPeriod, periodEnd } from '../domain/period';
 import { autoFillWeek, emptyWeek } from '../domain/shopping';
 import { uid } from '../lib/id';
+import { extraProducts } from './seed-ingredients';
 import { defaultRoutines, defaultSchedule, demoWellness } from './seed-wellness';
 
 // Chart palette — validated for colour-blind separation (see docs/ARCHITECTURE.md).
@@ -106,7 +107,7 @@ const PRODUCT_SEED: ProdSeed[] = [
 ];
 
 export function defaultProducts(): Product[] {
-  return PRODUCT_SEED.map(([id, name, category, packSize, kcal, protein, carbs, fat, tags, , , , piece]) => ({
+  return PRODUCT_SEED.map(([id, name, category, packSize, kcal, protein, carbs, fat, tags, , , , piece]): Product => ({
     id,
     name,
     category,
@@ -115,7 +116,7 @@ export function defaultProducts(): Product[] {
     tags,
     pieceGrams: piece?.[0],
     pieceLabel: piece?.[1],
-  }));
+  })).concat(extraProducts());
 }
 
 /**

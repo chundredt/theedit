@@ -5,12 +5,15 @@ import { DateInput } from './DateInput';
 import { getToday, useData, useStore } from '../data/store';
 import { PRODUCT_CATEGORIES, type DietTag, type ID, type PriceRecord, type Product, type ProductCategory } from '../domain/types';
 
-export function ProductSelect({ value, onChange, allowEmpty, className = 'input' }: { value: ID; onChange: (v: ID) => void; allowEmpty?: string; className?: string }) {
+export const NEW_PRODUCT = '__new';
+
+export function ProductSelect({ value, onChange, allowEmpty, className = 'input', allowNew }: { value: ID; onChange: (v: ID) => void; allowEmpty?: string; className?: string; allowNew?: boolean }) {
   const products = useData().products;
   const groups = PRODUCT_CATEGORIES.map((c) => [c, products.filter((p) => p.category === c).sort((a, b) => a.name.localeCompare(b.name))] as const).filter(([, l]) => l.length);
   return (
     <select className={className} value={value} onChange={(e) => onChange(e.target.value)} aria-label="Product">
       {allowEmpty !== undefined && <option value="">{allowEmpty}</option>}
+      {allowNew && <option value={NEW_PRODUCT}>＋ Add a new ingredient…</option>}
       {groups.map(([c, list]) => <optgroup key={c} label={c}>{list.map((p) => <option key={p.id} value={p.id}>{p.name}</option>)}</optgroup>)}
     </select>
   );
@@ -101,7 +104,7 @@ export function ProductForm({ initial, onClose, onSaved }: { initial?: Product; 
         <Field label="Name" className="full" error={touched && !name.trim() ? 'Required' : ''}><input className="input" value={name} onChange={(e) => setName(e.target.value)} placeholder="e.g. Greek yoghurt" /></Field>
         <Field label="Aisle"><select className="input" value={category} onChange={(e) => setCategory(e.target.value as ProductCategory)}>{PRODUCT_CATEGORIES.map((c) => <option key={c}>{c}</option>)}</select></Field>
         <Field label="Usual pack size (g / ml)"><NumberInput min={1} value={packSize} onChange={setPackSize} ariaLabel="Usual pack size" /></Field>
-        <div className="full label-text">Nutrition per 100 g (from the label)</div>
+        <div className="full label-text">Nutrition per 100 g <span className="muted" style={{ fontWeight: 500 }}>(optional — from the label)</span></div>
         <div className="full" style={{ display: 'grid', gridTemplateColumns: 'repeat(4, minmax(0,1fr))', gap: 10 }}>{num('kcal')}{num('protein')}{num('carbs')}{num('fat')}</div>
         <Field label="Sold by the piece? Grams each" help="e.g. egg = 50"><input className="input" type="number" min={0} value={pieceGrams} onChange={(e) => setPieceGrams(e.target.value ? Number(e.target.value) : '')} /></Field>
         <Field label="Piece name"><input className="input" value={pieceLabel} onChange={(e) => setPieceLabel(e.target.value)} placeholder="egg" disabled={!pieceGrams} /></Field>

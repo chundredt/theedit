@@ -244,4 +244,17 @@ export async function stage2({ page, go, step, assert, money, SHOTS }) {
     assert((await servings.inputValue()) === '1', 'empty servings should fall back to 1 when you leave the box');
     await page.keyboard.press('Escape');
   });
+
+  await step('recipe form: add an ingredient that is not in the list', async () => {
+    await go('recipes');
+    await page.getByRole('button', { name: 'New recipe' }).click();
+    const pick = page.locator('.modal select[aria-label="Product"]').first();
+    assert((await pick.locator('option', { hasText: 'Boerewors' }).count()) === 1, 'extra ingredients should be in the list');
+    await pick.selectOption('__new');
+    await page.getByPlaceholder('e.g. Greek yoghurt').fill('Peri-peri sauce');
+    await page.locator('.modal').last().getByRole('button', { name: 'Save', exact: true }).click();
+    const chosen = await pick.evaluate((el) => el.options[el.selectedIndex].text);
+    assert(chosen === 'Peri-peri sauce', `new ingredient should be selected, got "${chosen}"`);
+    await page.keyboard.press('Escape');
+  });
 }

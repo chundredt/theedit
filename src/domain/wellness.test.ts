@@ -140,3 +140,18 @@ describe('daily challenge', () => {
     expect(challengeStreak(d, TODAY)).toBe(3);
   });
 });
+
+import { migrate } from '../data/migrations';
+
+describe('ingredient list', () => {
+  it('older saved data gets the extra ingredients once, without duplicates', () => {
+    const d: any = emptyData(TODAY);
+    d.version = 5;
+    d.products = d.products.filter((p: any) => p.id !== 'boerewors' && p.id !== 'feta');
+    const before = d.products.length;
+    const m = migrate(d);
+    expect(m.products.filter((p) => p.id === 'boerewors')).toHaveLength(1);
+    expect(m.products.length).toBe(before + 2);
+    expect(m.version).toBe(6);
+  });
+});

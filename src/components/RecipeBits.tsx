@@ -1,7 +1,7 @@
 import { useMemo, useState } from 'react';
 import { Clock, Pencil, Plus, Trash2, Users, ImagePlus, X } from 'lucide-react';
 import { Banner, Field, Modal, NumberInput } from './ui';
-import { ProductSelect } from './FoodForms';
+import { NEW_PRODUCT, ProductForm, ProductSelect } from './FoodForms';
 import { getToday, useData, useStore } from '../data/store';
 import { dietConflicts, recipeStats, type RecipeStats } from '../domain/recipes';
 import { MEAL_TYPES, type Ingredient, type MealType, type Recipe } from '../domain/types';
@@ -137,6 +137,7 @@ export function RecipeForm({ initial, onClose, onSaved }: { initial?: Recipe; on
   const [steps, setSteps] = useState((initial?.steps || []).join('\n'));
   const [tags, setTags] = useState((initial?.tags || []).join(', '));
   const [touched, setTouched] = useState(false);
+  const [newFor, setNewFor] = useState<number | null>(null);
   const draft: Recipe = useMemo(() => ({ id: initial?.id || 'draft', name, emoji, image, mealTypes, servings, prepMinutes: prep, ingredients: ings.filter((i) => i.productId && i.grams > 0), steps: [], tags: [] }), [initial, name, emoji, image, mealTypes, servings, prep, ings]);
   const stats = recipeStats(draft, data, today);
   const valid = name.trim() && draft.ingredients.length > 0 && mealTypes.length > 0 && servings > 0;
@@ -162,7 +163,7 @@ export function RecipeForm({ initial, onClose, onSaved }: { initial?: Recipe; on
           <div className="field full"><span className="label-text">Ingredients (grams for the whole recipe)</span>
             {ings.map((ing, i) => (
               <div className="row" key={i} style={{ gap: 6 }}>
-                <ProductSelect className="input sm" value={ing.productId} allowEmpty="Choose ingredient…" onChange={(v) => setIngs(ings.map((x, j) => (j === i ? { ...x, productId: v } : x)))} />
+                <ProductSelect className="input sm" value={ing.productId} allowEmpty="Choose ingredient…" allowNew onChange={(v) => (v === NEW_PRODUCT ? setNewFor(i) : setIngs(ings.map((x, j) => (j === i ? { ...x, productId: v } : x))))} />
                 <NumberInput className="input sm" style={{ width: 96, flexShrink: 0 }} min={0} value={ing.grams} ariaLabel="Grams" onChange={(n) => setIngs(ings.map((x, j) => (j === i ? { ...x, grams: n } : x)))} />
                 <span className="muted xs">g</span>
                 <button type="button" className="btn ghost icon sm" aria-label="Remove ingredient" onClick={() => setIngs(ings.filter((_, j) => j !== i))}><X /></button>
@@ -170,7 +171,7 @@ export function RecipeForm({ initial, onClose, onSaved }: { initial?: Recipe; on
             ))}
             <div><button type="button" className="btn sm" onClick={() => setIngs([...ings, { productId: '', grams: 100 }])}><Plus /> Ingredient</button></div>
             {touched && !draft.ingredients.length && <span className="err">Add at least one ingredient</span>}
-            <span className="help">Missing an ingredient? Add it under Prices & specials → Products.</span>
+            <span className="help">Not in the list? Choose “＋ Add a new ingredient…” at the top of the list.</span>
           </div>
           <Field label="Method (one step per line)" className="full"><textarea className="input" rows={5} value={steps} onChange={(e) => setSteps(e.target.value)} /></Field>
           <Field label="Tags (comma separated)" className="full"><input className="input" value={tags} onChange={(e) => setTags(e.target.value)} placeholder="Budget, Meal prep" /></Field>
@@ -191,6 +192,7 @@ export function RecipeForm({ initial, onClose, onSaved }: { initial?: Recipe; on
           </div>
         </div>
       </div>
+      {newFor !== null && <ProductForm onClose={() => setNewFor(null)} onSaved={(id) => setIngs(ings.map((x, k) => (k === newFor ? { ...x, productId: id } : x)))} />}
     </Modal>
   );
 }
