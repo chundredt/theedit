@@ -216,14 +216,16 @@ export async function stage2({ page, go, step, assert, money, SHOTS }) {
   await step('daily challenge: swap it, then mark it done', async () => {
     await go('today');
     const card = page.getByTestId('daily-challenge');
-    const before = await card.locator('p').first().textContent();
-    await card.getByRole('button', { name: 'Another one' }).click();
-    const after = await card.locator('p').first().textContent();
+    const before = await card.locator('.challenge-main').textContent();
+    await card.getByRole('button', { name: 'Another challenge' }).click();
+    const after = await card.locator('.challenge-main').textContent();
     assert(after !== before, `swap should change the challenge (${before})`);
-    await card.getByRole('button', { name: 'Done', exact: true }).click();
-    await card.getByText('Done — nice!').waitFor();
-    await card.getByText('🔥 1 day').waitFor();
+    await card.getByRole('button', { name: 'Mark challenge done' }).click();
+    await card.getByRole('button', { name: 'Undo challenge done' }).waitFor();
+    await card.getByText('🔥 1').waitFor();
+    assert((await card.getByRole('button', { name: 'Another challenge' }).count()) === 0, 'swap hidden once done');
+    assert((await card.locator('button').allTextContents()).every((t) => !t.trim()), 'buttons should be icon-only');
     await page.reload();
-    await card.getByText('Done — nice!').waitFor();
+    await card.getByRole('button', { name: 'Undo challenge done' }).waitFor();
   });
 }
