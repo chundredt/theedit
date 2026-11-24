@@ -228,4 +228,20 @@ export async function stage2({ page, go, step, assert, money, SHOTS }) {
     await page.reload();
     await card.getByRole('button', { name: 'Undo challenge done' }).waitFor();
   });
+
+  await step('number fields can be cleared and retyped (servings)', async () => {
+    await go('recipes');
+    await page.getByRole('button', { name: 'New recipe' }).click();
+    const servings = page.getByLabel('Servings');
+    await servings.click();
+    await servings.press('End');
+    await servings.press('Backspace');
+    assert((await servings.inputValue()) === '', `box should be empty after deleting, got "${await servings.inputValue()}"`);
+    await servings.pressSequentially('4');
+    assert((await servings.inputValue()) === '4', `servings should be 4, got "${await servings.inputValue()}"`);
+    await servings.press('Backspace');
+    await page.getByLabel('Prep and cook time').click();
+    assert((await servings.inputValue()) === '1', 'empty servings should fall back to 1 when you leave the box');
+    await page.keyboard.press('Escape');
+  });
 }

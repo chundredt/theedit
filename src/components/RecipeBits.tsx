@@ -1,6 +1,6 @@
 import { useMemo, useState } from 'react';
 import { Clock, Pencil, Plus, Trash2, Users, ImagePlus, X } from 'lucide-react';
-import { Banner, Field, Modal } from './ui';
+import { Banner, Field, Modal, NumberInput } from './ui';
 import { ProductSelect } from './FoodForms';
 import { getToday, useData, useStore } from '../data/store';
 import { dietConflicts, recipeStats, type RecipeStats } from '../domain/recipes';
@@ -153,8 +153,8 @@ export function RecipeForm({ initial, onClose, onSaved }: { initial?: Recipe; on
       <div className="grid g-main" style={{ alignItems: 'start' }}>
         <div className="form-grid">
           <Field label="Recipe name" className="full" error={touched && !name.trim() ? 'Required' : ''}><input className="input" value={name} onChange={(e) => setName(e.target.value)} placeholder="e.g. Chicken & chickpea bowl" /></Field>
-          <Field label="Servings"><input className="input" type="number" min={1} max={20} value={servings} onChange={(e) => setServings(Math.max(1, Number(e.target.value)))} /></Field>
-          <Field label="Prep + cook time (min)"><input className="input" type="number" min={0} value={prep} onChange={(e) => setPrep(Number(e.target.value))} /></Field>
+          <Field label="Servings"><NumberInput min={1} max={20} value={servings} onChange={setServings} ariaLabel="Servings" /></Field>
+          <Field label="Prep + cook time (min)"><NumberInput min={0} value={prep} onChange={setPrep} ariaLabel="Prep and cook time" /></Field>
           <div className="field full"><span className="label-text">Good for</span>
             <div className="row wrap" style={{ gap: 6 }}>{MEAL_TYPES.map((m) => <button type="button" key={m} className={`chip clickable ${mealTypes.includes(m) ? 'on' : ''}`} onClick={() => setMealTypes(mealTypes.includes(m) ? mealTypes.filter((x) => x !== m) : [...mealTypes, m])}>{m}</button>)}</div>
             {touched && !mealTypes.length && <span className="err">Pick at least one</span>}
@@ -163,7 +163,7 @@ export function RecipeForm({ initial, onClose, onSaved }: { initial?: Recipe; on
             {ings.map((ing, i) => (
               <div className="row" key={i} style={{ gap: 6 }}>
                 <ProductSelect className="input sm" value={ing.productId} allowEmpty="Choose ingredient…" onChange={(v) => setIngs(ings.map((x, j) => (j === i ? { ...x, productId: v } : x)))} />
-                <input className="input sm" style={{ width: 96, flexShrink: 0 }} type="number" min={0} value={ing.grams} aria-label="Grams" onChange={(e) => setIngs(ings.map((x, j) => (j === i ? { ...x, grams: Number(e.target.value) } : x)))} />
+                <NumberInput className="input sm" style={{ width: 96, flexShrink: 0 }} min={0} value={ing.grams} ariaLabel="Grams" onChange={(n) => setIngs(ings.map((x, j) => (j === i ? { ...x, grams: n } : x)))} />
                 <span className="muted xs">g</span>
                 <button type="button" className="btn ghost icon sm" aria-label="Remove ingredient" onClick={() => setIngs(ings.filter((_, j) => j !== i))}><X /></button>
               </div>

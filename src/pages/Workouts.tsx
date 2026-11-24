@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { Check, ChevronLeft, ChevronRight, Pencil, Plus, Trash2, X } from 'lucide-react';
-import { Card, Field, Modal, PageHeader, Seg } from '../components/ui';
+import { Card, Field, Modal, NumberInput, PageHeader, Seg } from '../components/ui';
 import { DayStrip } from '../components/DayStrip';
 import { getToday, useData, useStore } from '../data/store';
 import { intensityFor, logsOn, plannedFor, weekStreak, weekSummary } from '../domain/workouts';
@@ -176,7 +176,7 @@ function RoutineForm({ initial, onClose }: { initial?: Routine; onClose: () => v
       <div className="form-grid">
         <Field label="Name"><input className="input" value={name} onChange={(e) => setName(e.target.value)} placeholder="e.g. Upper body" /></Field>
         <Field label="Type"><select className="input" value={kind} onChange={(e) => setKind(e.target.value as WorkoutKind)}>{Object.entries(KIND_LABEL).map(([k, l]) => <option key={k} value={k}>{l}</option>)}</select></Field>
-        <Field label="Minutes"><input className="input" type="number" min={5} max={240} value={minutes} onChange={(e) => setMinutes(Number(e.target.value) || 30)} /></Field>
+        <Field label="Minutes"><NumberInput min={5} max={240} value={minutes} onChange={setMinutes} ariaLabel="Minutes" /></Field>
         <Field label="Icon"><input className="input" value={emoji} onChange={(e) => setEmoji(e.target.value.slice(0, 4))} /></Field>
         <div className="field full"><span className="label-text">Colour</span>
           <div className="row wrap" style={{ gap: 8 }}>{PASTELS.map((c) => <button type="button" key={c} aria-label={c} className={`bg-${c}`} onClick={() => setColor(c)} style={{ width: 34, height: 34, borderRadius: '50%', border: color === c ? '3px solid var(--text)' : '3px solid transparent', cursor: 'pointer' }} />)}</div>
@@ -211,7 +211,7 @@ export function LogForm({ date, onClose }: { date: string; onClose: () => void }
       <div className="form-grid">
         <Field label="What did you do?" className="full"><input className="input" value={name} onChange={(e) => setName(e.target.value)} placeholder="Walk, padel, spin class…" /></Field>
         <Field label="Type"><select className="input" value={kind} onChange={(e) => setKind(e.target.value as WorkoutKind)}>{Object.entries(KIND_LABEL).map(([k, l]) => <option key={k} value={k}>{l}</option>)}</select></Field>
-        <Field label="Minutes"><input className="input" type="number" min={1} value={minutes} onChange={(e) => setMinutes(Number(e.target.value) || 1)} /></Field>
+        <Field label="Minutes"><NumberInput min={1} value={minutes} onChange={setMinutes} ariaLabel="Minutes" /></Field>
         <Field label="Notes (optional)" className="full"><input className="input" value={notes} onChange={(e) => setNotes(e.target.value)} /></Field>
       </div>
     </Modal>

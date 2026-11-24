@@ -1,6 +1,6 @@
 import { useMemo, useRef, useState } from 'react';
 import { Camera, ClipboardPaste, ExternalLink, Link2, Pencil, Plus, Search, Tags, Trash2, Store as StoreIcon, Package } from 'lucide-react';
-import { Banner, Card, Empty, Field, Modal, PageHeader, Seg } from '../components/ui';
+import { Banner, Card, Empty, Field, Modal, NumberInput, PageHeader, Seg } from '../components/ui';
 import { DateInput } from '../components/DateInput';
 import { PriceForm, ProductForm, ProductSelect } from '../components/FoodForms';
 import { getToday, useData, useStore } from '../data/store';
@@ -267,7 +267,7 @@ function Import() {
                       </div>
                       {r.productId && r.confidence < 0.6 && r.productId === r.matchId && <div className="xs warn">Check this match</div>}
                     </td>
-                    <td className="r"><input className="input sm" style={{ width: 90, textAlign: 'right' }} type="number" step="0.01" value={r.price} onChange={(e) => upd(i, { price: Number(e.target.value) })} /></td>
+                    <td className="r"><NumberInput className="input sm" style={{ width: 90, textAlign: 'right' }} step="0.01" min={0} value={r.price} onChange={(n) => upd(i, { price: n })} ariaLabel="Price" /></td>
                     <td className="r"><input className="input sm" style={{ width: 80, textAlign: 'right' }} type="number" value={r.packSize || ''} onChange={(e) => upd(i, { packSize: Number(e.target.value) || undefined })} /></td>
                     <td><input type="checkbox" checked={r.special} onChange={(e) => upd(i, { special: e.target.checked })} aria-label="Special" /></td>
                   </tr>

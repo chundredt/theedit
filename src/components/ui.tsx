@@ -253,3 +253,34 @@ export function ProductAvatar({ name, color }: { name: string; color: string }) 
     </span>
   );
 }
+
+/**
+ * Number field you can clear and retype freely. While typing, an empty box stays empty;
+ * when you leave it empty, it falls back to `min` (or 0).
+ */
+export function NumberInput({ value, onChange, min, max, step, className = 'input', style, ariaLabel, placeholder }: {
+  value: number; onChange: (n: number) => void; min?: number; max?: number; step?: number | string; className?: string; style?: React.CSSProperties; ariaLabel?: string; placeholder?: string;
+}) {
+  const [text, setText] = useState(String(value));
+  const focused = useRef(false);
+  useEffect(() => {
+    if (!focused.current) setText(String(value));
+  }, [value]);
+  const clamp = (n: number) => Math.min(max ?? Infinity, Math.max(min ?? -Infinity, n));
+  return (
+    <input className={className} style={style} type="number" inputMode="decimal" min={min} max={max} step={step} aria-label={ariaLabel} placeholder={placeholder} value={text}
+      onFocus={(e) => { focused.current = true; e.target.select(); }}
+      onChange={(e) => {
+        setText(e.target.value);
+        const n = Number(e.target.value);
+        if (e.target.value.trim() !== '' && Number.isFinite(n)) onChange(clamp(n));
+      }}
+      onBlur={() => {
+        focused.current = false;
+        const n = Number(text);
+        const v = text.trim() === '' || !Number.isFinite(n) ? clamp(min ?? 0) : clamp(n);
+        setText(String(v));
+        if (v !== value) onChange(v);
+      }} />
+  );
+}

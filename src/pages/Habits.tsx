@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { Check, ChevronLeft, ChevronRight, Minus, Pencil, Plus, Trash2 } from 'lucide-react';
-import { Card, Field, Modal, PageHeader } from '../components/ui';
+import { Card, Field, Modal, NumberInput, PageHeader } from '../components/ui';
 import { DayStrip } from '../components/DayStrip';
 import { getToday, useData, useStore } from '../data/store';
 import { bestStreak, completionRate, countOn, dayScore, isDone, isDue, streak } from '../domain/habits';
@@ -152,7 +152,7 @@ export function HabitForm({ initial, onClose }: { initial?: Habit; onClose: () =
             {WEEKDAYS.map((w, i) => <button type="button" key={w} className={`chip clickable ${days.includes(i) ? 'on' : ''}`} onClick={() => setDays(days.includes(i) ? days.filter((x) => x !== i) : [...days, i])}>{w}</button>)}
           </div>
         </div>
-        <Field label="Times per day" help="More than 1 makes it a counter"><input className="input" type="number" min={1} max={50} value={target} onChange={(e) => setTarget(Number(e.target.value) || 1)} /></Field>
+        <Field label="Times per day" help="More than 1 makes it a counter"><NumberInput min={1} max={50} value={target} onChange={setTarget} ariaLabel="Times per day" /></Field>
         <Field label="Unit (optional)"><input className="input" value={unit} onChange={(e) => setUnit(e.target.value)} placeholder="glasses" disabled={target <= 1} /></Field>
         <button type="submit" hidden />
       </form>

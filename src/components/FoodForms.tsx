@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { Trash2 } from 'lucide-react';
-import { Field, Modal, MoneyInput } from './ui';
+import { Field, Modal, MoneyInput, NumberInput } from './ui';
 import { DateInput } from './DateInput';
 import { getToday, useData, useStore } from '../data/store';
 import { PRODUCT_CATEGORIES, type DietTag, type ID, type PriceRecord, type Product, type ProductCategory } from '../domain/types';
@@ -88,7 +88,7 @@ export function ProductForm({ initial, onClose, onSaved }: { initial?: Product; 
   };
   const num = (k: keyof typeof n) => (
     <Field label={k === 'kcal' ? 'kcal' : `${k[0].toUpperCase()}${k.slice(1)} (g)`}>
-      <input className="input" type="number" min={0} step="0.1" value={n[k]} onChange={(e) => setN({ ...n, [k]: Number(e.target.value) || 0 })} />
+      <NumberInput min={0} step="0.1" value={n[k]} onChange={(v) => setN({ ...n, [k]: v })} ariaLabel={k} />
     </Field>
   );
   return (
@@ -100,7 +100,7 @@ export function ProductForm({ initial, onClose, onSaved }: { initial?: Product; 
       <form className="form-grid" onSubmit={(e) => { e.preventDefault(); save(); }}>
         <Field label="Name" className="full" error={touched && !name.trim() ? 'Required' : ''}><input className="input" value={name} onChange={(e) => setName(e.target.value)} placeholder="e.g. Greek yoghurt" /></Field>
         <Field label="Aisle"><select className="input" value={category} onChange={(e) => setCategory(e.target.value as ProductCategory)}>{PRODUCT_CATEGORIES.map((c) => <option key={c}>{c}</option>)}</select></Field>
-        <Field label="Usual pack size (g / ml)"><input className="input" type="number" min={1} value={packSize} onChange={(e) => setPackSize(Number(e.target.value))} /></Field>
+        <Field label="Usual pack size (g / ml)"><NumberInput min={1} value={packSize} onChange={setPackSize} ariaLabel="Usual pack size" /></Field>
         <div className="full label-text">Nutrition per 100 g (from the label)</div>
         <div className="full" style={{ display: 'grid', gridTemplateColumns: 'repeat(4, minmax(0,1fr))', gap: 10 }}>{num('kcal')}{num('protein')}{num('carbs')}{num('fat')}</div>
         <Field label="Sold by the piece? Grams each" help="e.g. egg = 50"><input className="input" type="number" min={0} value={pieceGrams} onChange={(e) => setPieceGrams(e.target.value ? Number(e.target.value) : '')} /></Field>
