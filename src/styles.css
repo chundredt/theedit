@@ -542,3 +542,17 @@ h2 { font-weight: 800; font-size: 18px; letter-spacing: -0.01em; }
 .cal { justify-items: center; row-gap: 8px; }
 .cal .c { width: 40px; height: 40px; max-width: none; aspect-ratio: auto; margin: 0; }
 @media (max-width: 420px) { .cal .c { width: 34px; height: 34px; font-size: 12px; } .cal { gap: 4px; } }
+
+/* Phone budget cards */
+.phone-cat { padding: 14px; border-radius: 20px; background: var(--surface-2); }
+.phone-cat-amounts { display: grid; grid-template-columns: minmax(0, 1.4fr) minmax(0, 1fr) minmax(0, 1fr); gap: 10px; align-items: end; margin-top: 10px; }
+.phone-cat-plan { display: flex; flex-direction: column; gap: 4px; }
+.phone-cat-plan .input { background: var(--surface); height: 46px; font-size: 17px; font-weight: 700; }
+.phone-cat-stat { display: flex; flex-direction: column; gap: 4px; padding-bottom: 12px; min-width: 0; }
+.phone-cat-stat b { font-size: 15px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+/* 16px+ text in fields stops phones zooming in when you tap them */
+@media (max-width: 900px) {
+  .input, select.input, textarea.input, .input.sm { font-size: 16px; }
+  .input.sm { height: 42px; }
+  .input-money .input { padding-left: 30px; }
+}

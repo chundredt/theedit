@@ -185,10 +185,10 @@ function RoutineForm({ initial, onClose }: { initial?: Routine; onClose: () => v
           {exs.map((e, i) => (
             <div key={i} className="row wrap" style={{ gap: 6 }}>
               <input className="input sm" style={{ flex: '2 1 180px' }} placeholder="Exercise" value={e.name} onChange={(ev) => upd(i, { name: ev.target.value })} aria-label="Exercise name" />
-              <input className="input sm" style={{ flex: '0 1 64px' }} type="number" min={0} placeholder="Sets" value={e.sets ?? ''} onChange={(ev) => upd(i, { sets: ev.target.value ? Number(ev.target.value) : undefined })} aria-label="Sets" />
-              <input className="input sm" style={{ flex: '0 1 90px' }} placeholder="Reps" value={e.reps ?? ''} onChange={(ev) => upd(i, { reps: ev.target.value || undefined })} aria-label="Reps" />
-              <input className="input sm" style={{ flex: '0 1 70px' }} type="number" min={0} placeholder="kg" value={e.weight ?? ''} onChange={(ev) => upd(i, { weight: ev.target.value ? Number(ev.target.value) : undefined })} aria-label="Weight in kg" />
-              <input className="input sm" style={{ flex: '0 1 70px' }} type="number" min={0} placeholder="min" value={e.minutes ?? ''} onChange={(ev) => upd(i, { minutes: ev.target.value ? Number(ev.target.value) : undefined })} aria-label="Minutes" />
+              <input className="input sm" style={{ flex: '1 1 72px' }} type="number" min={0} placeholder="Sets" value={e.sets ?? ''} onChange={(ev) => upd(i, { sets: ev.target.value ? Number(ev.target.value) : undefined })} aria-label="Sets" />
+              <input className="input sm" style={{ flex: '1 1 90px' }} placeholder="Reps" value={e.reps ?? ''} onChange={(ev) => upd(i, { reps: ev.target.value || undefined })} aria-label="Reps" />
+              <input className="input sm" style={{ flex: '1 1 72px' }} type="number" min={0} placeholder="kg" value={e.weight ?? ''} onChange={(ev) => upd(i, { weight: ev.target.value ? Number(ev.target.value) : undefined })} aria-label="Weight in kg" />
+              <input className="input sm" style={{ flex: '1 1 72px' }} type="number" min={0} placeholder="min" value={e.minutes ?? ''} onChange={(ev) => upd(i, { minutes: ev.target.value ? Number(ev.target.value) : undefined })} aria-label="Minutes" />
               <button type="button" className="btn ghost icon sm" aria-label="Remove exercise" onClick={() => setExs(exs.filter((_, j) => j !== i))}><X /></button>
             </div>
           ))}

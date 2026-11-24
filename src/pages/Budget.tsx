@@ -3,6 +3,7 @@ import { Copy, Pencil, Plus, Trash2 } from 'lucide-react';
 import { Banner, Card, Confirm, Field, Modal, MoneyInput, PageHeader, PeriodNav } from '../components/ui';
 import { BillList } from '../components/BudgetBits';
 import { IncomeCard } from '../components/IncomeCard';
+import { useIsPhone } from '../lib/useIsPhone';
 import { getToday, useData, useStore } from '../data/store';
 import { usePeriod } from '../lib/ui-state';
 import { resolveBudget, summarize, type CategoryRow } from '../domain/budget';
@@ -26,6 +27,7 @@ export function BudgetPage() {
   const budget = resolveBudget(data, period);
   const [editing, setEditing] = useState<Category | 'new-fixed' | 'new-variable' | 'new-savings' | null>(null);
   const [deleting, setDeleting] = useState<Category | null>(null);
+  const phone = useIsPhone();
   const prev = shiftPeriod(period, -1);
   const hasPrev = !!data.budgets[prev];
 
@@ -84,6 +86,12 @@ export function BudgetPage() {
         return (
           <Card key={g.id} className="mt-16" title={<><span className="stat-dot" style={{ background: g.color }} />{g.title} <span className="muted small" style={{ fontWeight: 500 }}>· {money(s.planned[g.id], { cents: false })} planned</span></>}
             action={<button className="btn sm" onClick={() => setEditing(`new-${g.id}`)}><Plus /> Add category</button>}>
+            {phone ? (
+              <div className="stack" style={{ gap: 10 }}>
+                {rows.map((r) => <PhoneRow key={r.category.id} r={r} group={g.id} onEdit={() => setEditing(r.category)} onPlan={(v) => setAllocation(period, r.category.id, v)} />)}
+                {rows.length === 0 && <p className="muted small">No categories yet.</p>}
+              </div>
+            ) : (
             <div className="table-wrap">
               <table className="t">
                 <thead>
@@ -102,6 +110,7 @@ export function BudgetPage() {
                 </tbody>
               </table>
             </div>
+            )}
             <p className="muted xs mt-8">{g.blurb}. {g.id === 'fixed' ? 'Add a due day to get debit order reminders.' : ''}</p>
           </Card>
         );
@@ -111,9 +120,38 @@ export function BudgetPage() {
         <BillList bills={s.bills} />
       </Card>
 
-      {editing && <CategoryModal initial={typeof editing === 'string' ? undefined : editing} group={typeof editing === 'string' ? (editing.slice(4) as CategoryGroup) : editing.group} period={period} planned={typeof editing === 'string' ? 0 : budget.allocations[editing.id] || 0} onClose={() => setEditing(null)} />}
+      {editing && <CategoryModal initial={typeof editing === 'string' ? undefined : editing} group={typeof editing === 'string' ? (editing.slice(4) as CategoryGroup) : editing.group} period={period} planned={typeof editing === 'string' ? 0 : budget.allocations[editing.id] || 0} onClose={() => setEditing(null)} onDelete={typeof editing === 'string' ? undefined : () => setDeleting(editing)} />}
       {deleting && <DeleteCategory category={deleting} onClose={() => setDeleting(null)} />}
     </>
+  );
+}
+
+/** Phone layout: one card per category with a full-width amount box. */
+function PhoneRow({ r, group, onEdit, onPlan }: { r: CategoryRow; group: CategoryGroup; onEdit: () => void; onPlan: (v: number) => void }) {
+  return (
+    <div className="phone-cat">
+      <div className="row between" style={{ gap: 8 }}>
+        <button className="row" style={{ background: 'none', border: 0, padding: 0, cursor: 'pointer', gap: 8, textAlign: 'left', minWidth: 0 }} onClick={onEdit}>
+          <span className="stat-dot" style={{ background: r.category.color }} />
+          <b style={{ fontSize: 16 }}>{r.category.name}</b>
+        </button>
+        <div className="row" style={{ gap: 4 }}>
+          {r.status === 'over' && <span className="chip danger">Over</span>}
+          {r.status === 'near' && <span className="chip warn">Near limit</span>}
+          <button className="btn ghost icon sm" aria-label={`Edit ${r.category.name}`} onClick={onEdit}><Pencil /></button>
+        </div>
+      </div>
+      {group === 'fixed' && r.category.dueDay && <div className="muted xs" style={{ marginTop: 2 }}>Due on the {ordinal(r.category.dueDay)}{r.category.payMethod ? ` · ${r.category.payMethod}` : ''}</div>}
+      <div className="phone-cat-amounts">
+        <label className="phone-cat-plan">
+          <span className="xs muted">Planned</span>
+          <MoneyInput value={r.planned} onCommit={(v) => v !== r.planned && onPlan(v)} ariaLabel={`Planned for ${r.category.name}`} />
+        </label>
+        <div className="phone-cat-stat"><span className="xs muted">{group === 'savings' ? 'Saved' : 'Spent'}</span><b>{money(r.actual, { cents: false })}</b></div>
+        <div className="phone-cat-stat"><span className="xs muted">Left</span><b className={r.remaining < 0 ? 'danger' : ''}>{money(r.remaining, { cents: false })}</b></div>
+      </div>
+      {r.planned > 0 && <div className="bar thin mt-8"><span style={{ width: `${Math.min(100, (r.actual / r.planned) * 100)}%`, background: r.status === 'over' ? 'var(--danger)' : r.status === 'near' ? 'var(--warn)' : undefined }} /></div>}
+    </div>
   );
 }
 
@@ -139,7 +177,7 @@ function Row({ r, fixed, onEdit, onDelete, onPlan }: { r: CategoryRow; fixed: bo
   );
 }
 
-function CategoryModal({ initial, group: g0, period, planned, onClose }: { initial?: Category; group: CategoryGroup; period: string; planned: number; onClose: () => void }) {
+function CategoryModal({ initial, group: g0, period, planned, onClose, onDelete }: { initial?: Category; group: CategoryGroup; period: string; planned: number; onClose: () => void; onDelete?: () => void }) {
   const { addCategory, updateCategory, setAllocation, toast } = useStore.getState();
   const [name, setName] = useState(initial?.name || '');
   const [group, setGroup] = useState<CategoryGroup>(initial?.group || g0);
@@ -160,7 +198,7 @@ function CategoryModal({ initial, group: g0, period, planned, onClose }: { initi
     onClose();
   };
   return (
-    <Modal title={initial ? 'Edit category' : 'New category'} onClose={onClose} footer={<><button className="btn" onClick={onClose}>Cancel</button><button className="btn primary" onClick={save}>Save</button></>}>
+    <Modal title={initial ? 'Edit category' : 'New category'} onClose={onClose} footer={<>{initial && onDelete && <button className="btn danger left" onClick={() => { onClose(); onDelete(); }}><Trash2 /> Delete</button>}<button className="btn" onClick={onClose}>Cancel</button><button className="btn primary" onClick={save}>Save</button></>}>
       <form className="form-grid" onSubmit={(e) => { e.preventDefault(); save(); }}>
         <Field label="Name" className="full" error={touched && !name.trim() ? 'Give the category a name' : ''}><input className="input" value={name} onChange={(e) => setName(e.target.value)} placeholder="e.g. School fees" /></Field>
         <Field label="Type">

@@ -163,7 +163,7 @@ export function RecipeForm({ initial, onClose, onSaved }: { initial?: Recipe; on
             {ings.map((ing, i) => (
               <div className="row" key={i} style={{ gap: 6 }}>
                 <ProductSelect className="input sm" value={ing.productId} allowEmpty="Choose ingredient…" onChange={(v) => setIngs(ings.map((x, j) => (j === i ? { ...x, productId: v } : x)))} />
-                <input className="input sm" style={{ width: 90 }} type="number" min={0} value={ing.grams} aria-label="Grams" onChange={(e) => setIngs(ings.map((x, j) => (j === i ? { ...x, grams: Number(e.target.value) } : x)))} />
+                <input className="input sm" style={{ width: 96, flexShrink: 0 }} type="number" min={0} value={ing.grams} aria-label="Grams" onChange={(e) => setIngs(ings.map((x, j) => (j === i ? { ...x, grams: Number(e.target.value) } : x)))} />
                 <span className="muted xs">g</span>
                 <button type="button" className="btn ghost icon sm" aria-label="Remove ingredient" onClick={() => setIngs(ings.filter((_, j) => j !== i))}><X /></button>
               </div>

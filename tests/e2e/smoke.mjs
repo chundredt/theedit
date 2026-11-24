@@ -168,6 +168,11 @@ await step('mobile layout has bottom navigation and no horizontal scroll', async
     assert(overflow <= 1, `${r}: page scrolls horizontally by ${overflow}px`);
   }
   assert(await mp.locator('.bottom-nav').isVisible(), 'bottom nav not visible');
+  await mp.goto(`${BASE}?today=${TODAY}#budget`);
+  const box = await mp.getByLabel('Planned for Rent / bond').boundingBox();
+  assert(box && box.width >= 100 && box.height >= 40, `phone budget amount box too small: ${JSON.stringify(box)}`);
+  const fs = await mp.getByLabel('Planned for Rent / bond').evaluate((el) => parseFloat(getComputedStyle(el).fontSize));
+  assert(fs >= 16, `phone input text should be at least 16px, got ${fs}`);
   await m.close();
 });
 
