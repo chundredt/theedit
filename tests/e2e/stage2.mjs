@@ -123,12 +123,12 @@ export async function stage2({ page, go, step, assert, money, SHOTS }) {
     await page.getByRole('button', { name: 'Complete 8,000 steps' }).click();
     const after = await chip.textContent();
     assert(Number(after.split('/')[0]) === Number(before.split('/')[0]) + 1, `habit count ${before} → ${after}`);
-    await page.getByRole('button', { name: 'One more Drink water' }).click();
-    await page.getByText('4 of 8 glasses').waitFor();
+    await page.getByRole('button', { name: 'More Drink water' }).click();
+    await page.getByText('1 of 2 L').waitFor();
     await page.getByTestId('today-workout').getByRole('button', { name: 'Mark done' }).click();
     await page.getByTestId('today-workout').getByText('Done · 30 minutes').waitFor();
     await page.reload();
-    await page.getByText('4 of 8 glasses').waitFor();
+    await page.getByText('1 of 2 L').waitFor();
     await page.screenshot({ path: `${SHOTS}today.png`, fullPage: true });
   });
 

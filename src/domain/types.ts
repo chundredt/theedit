@@ -290,9 +290,11 @@ export interface Habit {
   color: PastelColor;
   /** Weekdays it applies to (0 = Monday … 6 = Sunday). Empty = every day. */
   days: number[];
-  /** Times per day for counted habits (e.g. 8 glasses of water); 1 = simple tick. */
+  /** Daily goal: 1 for a simple tick, or an amount (e.g. 2 for 2 L of water). */
   target: number;
   unit?: string;
+  /** How much one tap of + adds (e.g. 0.25 L). Default 1. */
+  step?: number;
   createdAt: ISODate;
   archived?: boolean;
 }

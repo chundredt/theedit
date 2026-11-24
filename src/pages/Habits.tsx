@@ -1,9 +1,9 @@
 import { useState } from 'react';
 import { Check, ChevronLeft, ChevronRight, Minus, Pencil, Plus, Trash2 } from 'lucide-react';
-import { Card, Field, Modal, NumberInput, PageHeader } from '../components/ui';
+import { Card, Field, Modal, NumberInput, PageHeader, Seg } from '../components/ui';
 import { DayStrip } from '../components/DayStrip';
 import { getToday, useData, useStore } from '../data/store';
-import { bestStreak, completionRate, countOn, dayScore, isDone, isDue, streak } from '../domain/habits';
+import { bestStreak, completionRate, countOn, dayScore, isDone, isDue, streak, isCounter, amountLabel, bump, fmtAmount } from '../domain/habits';
 import { HABIT_IDEAS } from '../data/seed-wellness';
 import { PASTELS, type Habit, type PastelColor } from '../domain/types';
 import { monthName, toISO } from '../lib/format';
@@ -41,18 +41,18 @@ export function HabitsPage() {
                   <span style={{ fontSize: 26 }}>{h.emoji}</span>
                   <div className="grow">
                     <b style={{ fontSize: 16 }}>{h.name}</b>
-                    <div className="small" style={{ opacity: 0.7 }}>{h.target > 1 ? `${c} of ${h.target} ${h.unit || ''}` : done ? 'Done' : 'Not yet'}{st > 0 ? ` · 🔥 ${st} day${st === 1 ? '' : 's'}` : ''}</div>
+                    <div className="small" style={{ opacity: 0.7 }}>{isCounter(h) ? amountLabel(h, c) : done ? 'Done' : 'Not yet'}{st > 0 ? ` · 🔥 ${st} day${st === 1 ? '' : 's'}` : ''}</div>
                   </div>
-                  {h.target > 1 && (
+                  {isCounter(h) && (
                     <>
-                      <button className="btn icon sm" aria-label={`One less ${h.name}`} disabled={c === 0 || future} onClick={() => setHabitCount(day, h.id, c - 1)}><Minus /></button>
-                      <button className="btn icon sm" aria-label={`One more ${h.name}`} disabled={future} onClick={() => setHabitCount(day, h.id, Math.min(h.target * 3, c + 1))}><Plus /></button>
+                      <button className="btn icon sm" aria-label={`Less ${h.name}`} disabled={c === 0 || future} onClick={() => setHabitCount(day, h.id, bump(h, c, -1))}><Minus /></button>
+                      <button className="btn icon sm" aria-label={`More ${h.name}`} disabled={future} onClick={() => setHabitCount(day, h.id, bump(h, c, 1))}><Plus /></button>
                     </>
                   )}
                   <button className={`round-check ${done ? 'on' : ''}`} style={done ? { background: '#111', borderColor: '#111', color: '#fff' } : undefined} aria-label={`${done ? 'Undo' : 'Complete'} ${h.name}`} aria-pressed={done} disabled={future}
                     onClick={() => setHabitCount(day, h.id, done ? 0 : h.target)}>{done && <Check />}</button>
                 </div>
-                {h.target > 1 && <div className="bar thin mt-12"><span style={{ width: `${Math.min(100, (c / h.target) * 100)}%` }} /></div>}
+                {isCounter(h) && <div className="bar thin mt-12"><span style={{ width: `${Math.min(100, (c / h.target) * 100)}%` }} /></div>}
               </div>
             );
           })}
@@ -75,7 +75,7 @@ export function HabitsPage() {
                 <span className={`avatar bg-${h.color}`} style={{ borderRadius: 12, fontSize: 18 }}>{h.emoji}</span>
                 <div className="grow">
                   <div className="title">{h.name}</div>
-                  <div className="meta">{h.days.length ? h.days.map((d) => WEEKDAYS[d]).join(', ') : 'Every day'} · {Math.round(completionRate(data, h, today) * 100)}% last 30 days · best {bestStreak(data, h, today)}</div>
+                  <div className="meta">{h.days.length ? h.days.map((d) => WEEKDAYS[d]).join(', ') : 'Every day'}{isCounter(h) ? ` · goal ${fmtAmount(h.target)}${h.unit ? ` ${h.unit}` : ''}` : ''} · {Math.round(completionRate(data, h, today) * 100)}% last 30 days · best {bestStreak(data, h, today)}</div>
                 </div>
                 <button className="btn ghost icon sm" aria-label={`Edit ${h.name}`} onClick={() => setEditing(h)}><Pencil /></button>
               </div>
@@ -126,11 +126,13 @@ export function HabitForm({ initial, onClose }: { initial?: Habit; onClose: () =
   const [emoji, setEmoji] = useState(initial?.emoji || '✨');
   const [color, setColor] = useState<PastelColor>(initial?.color || 'lavender');
   const [days, setDays] = useState<number[]>(initial?.days || []);
-  const [target, setTarget] = useState(initial?.target || 1);
+  const [amount, setAmount] = useState(initial ? isCounter(initial) : false);
+  const [target, setTarget] = useState(initial && isCounter(initial) ? initial.target : 2);
   const [unit, setUnit] = useState(initial?.unit || '');
+  const [step, setStep] = useState(initial?.step || 1);
   const save = () => {
     if (!name.trim()) return;
-    saveHabit({ id: initial?.id, createdAt: initial?.createdAt, name: name.trim(), emoji, color, days: days.length === 7 ? [] : [...days].sort(), target: Math.max(1, target), unit: target > 1 ? unit.trim() || undefined : undefined });
+    saveHabit({ id: initial?.id, createdAt: initial?.createdAt, name: name.trim(), emoji, color, days: days.length === 7 ? [] : [...days].sort(), ...(amount ? { target: Math.max(0.01, target), unit: unit.trim() || undefined, step: Math.max(0.01, step) } : { target: 1, unit: undefined, step: undefined }) });
     onClose();
   };
   return (
@@ -152,8 +154,17 @@ export function HabitForm({ initial, onClose }: { initial?: Habit; onClose: () =
             {WEEKDAYS.map((w, i) => <button type="button" key={w} className={`chip clickable ${days.includes(i) ? 'on' : ''}`} onClick={() => setDays(days.includes(i) ? days.filter((x) => x !== i) : [...days, i])}>{w}</button>)}
           </div>
         </div>
-        <Field label="Times per day" help="More than 1 makes it a counter"><NumberInput min={1} max={50} value={target} onChange={setTarget} ariaLabel="Times per day" /></Field>
-        <Field label="Unit (optional)"><input className="input" value={unit} onChange={(e) => setUnit(e.target.value)} placeholder="glasses" disabled={target <= 1} /></Field>
+        <div className="field full"><span className="label-text">How do you track it?</span>
+          <Seg value={amount ? 'amount' : 'tick'} onChange={(v) => setAmount(v === 'amount')} options={[{ value: 'tick', label: 'Tick it off' }, { value: 'amount', label: 'Track an amount' }]} />
+        </div>
+        {amount && (
+          <>
+            <Field label="Daily goal"><NumberInput min={0.01} step={0.25} value={target} onChange={setTarget} ariaLabel="Daily goal" /></Field>
+            <Field label="Unit"><input className="input" value={unit} onChange={(e) => setUnit(e.target.value)} placeholder="L" aria-label="Unit" /></Field>
+            <div className="full row wrap" style={{ gap: 6, marginTop: -6 }}>{['L', 'glasses', 'steps', 'min', 'km', 'pages'].map((u) => <button type="button" key={u} className={`chip clickable ${unit === u ? 'on' : ''}`} onClick={() => setUnit(u)}>{u}</button>)}</div>
+            <Field label="Each tap of + adds" help={`${fmtAmount(step)}${unit ? ` ${unit}` : ''} per tap · ${Math.ceil(target / Math.max(0.01, step))} taps to reach your goal`}><NumberInput min={0.01} step={0.05} value={step} onChange={setStep} ariaLabel="Each tap adds" /></Field>
+          </>
+        )}
         <button type="submit" hidden />
       </form>
     </Modal>

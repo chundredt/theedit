@@ -3,7 +3,7 @@ import { defaultRoutines, defaultSchedule } from './seed-wellness';
 import { extraProducts } from './seed-ingredients';
 
 /** Bump when the stored shape changes, and add a step below. */
-export const CURRENT_VERSION = 7;
+export const CURRENT_VERSION = 8;
 
 type Migration = (data: any) => any;
 const MIGRATIONS: Record<number, Migration> = {
@@ -33,6 +33,18 @@ const MIGRATIONS: Record<number, Migration> = {
   },
   // v7: prices that adjust themselves.
   7: (d) => ({ storeFactors: {}, ...d }),
+  // v8: amount-based habits. Water counted in glasses becomes litres (1 glass = 250 ml).
+  8: (d) => {
+    for (const h of d.habits || []) {
+      if (/water/i.test(h.name) && h.unit === 'glasses') {
+        h.target = Math.round(h.target * 0.25 * 100) / 100;
+        h.unit = 'L';
+        h.step = 0.25;
+        for (const day of Object.values<any>(d.habitLogs || {})) if (day[h.id]) day[h.id] = Math.round(day[h.id] * 0.25 * 100) / 100;
+      }
+    }
+    return d;
+  },
 };
 
 export function migrate(raw: any): AppData {

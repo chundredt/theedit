@@ -155,3 +155,32 @@ describe('ingredient list', () => {
     expect(m.version).toBeGreaterThanOrEqual(6);
   });
 });
+
+import { amountLabel, bump, isCounter } from './habits';
+
+describe('amount habits (water in litres)', () => {
+  it('steps in your chosen amount and is done at your goal', () => {
+    const h = habit({ target: 2.5, unit: 'L', step: 0.25 });
+    expect(isCounter(h)).toBe(true);
+    expect(bump(h, 0, 1)).toBe(0.25);
+    expect(bump(h, 0.25, -1)).toBe(0);
+    expect(bump(h, 0, -1)).toBe(0);
+    expect(amountLabel(h, 1.75)).toBe('1.75 of 2.5 L');
+    const d = emptyData(TODAY);
+    d.habits = [h];
+    d.habitLogs = { [TODAY]: { h: 2.5 } };
+    expect(dayScore(d, TODAY)).toBe(1);
+  });
+  it('a simple tick habit is not a counter', () => {
+    expect(isCounter(habit())).toBe(false);
+  });
+  it('converts an existing water habit from glasses to litres', () => {
+    const d: any = emptyData(TODAY);
+    d.version = 7;
+    d.habits = [habit({ id: 'w', name: 'Drink water', target: 8, unit: 'glasses' })];
+    d.habitLogs = { [TODAY]: { w: 6 } };
+    const m = migrate(d);
+    expect(m.habits[0]).toMatchObject({ target: 2, unit: 'L', step: 0.25 });
+    expect(m.habitLogs[TODAY].w).toBe(1.5);
+  });
+});

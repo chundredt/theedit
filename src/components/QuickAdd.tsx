@@ -7,7 +7,7 @@ import { getToday, useData, useStore } from '../data/store';
 import { go } from '../lib/ui-state';
 import { groceryCategory } from '../domain/budget';
 import { defaultPeriod } from '../lib/ui-state';
-import { countOn, isDue } from '../domain/habits';
+import { countOn, isDue, isCounter, amountLabel, bump } from '../domain/habits';
 import { logsOn, plannedFor } from '../domain/workouts';
 import { LogForm } from '../pages/Workouts';
 import { HabitForm } from '../pages/Habits';
@@ -44,11 +44,11 @@ export function QuickAdd({ onClose }: { onClose: () => void }) {
           return (
             <div key={h.id} className="check-row" style={{ borderColor: 'var(--border)' }}>
               <span className={`avatar bg-${h.color}`} style={{ borderRadius: 14, fontSize: 18 }}>{h.emoji}</span>
-              <div className="grow"><b>{h.name}</b>{h.target > 1 && <div className="xs muted">{c} of {h.target} {h.unit || ''}</div>}</div>
-              {h.target > 1 && (
+              <div className="grow"><b>{h.name}</b>{isCounter(h) && <div className="xs muted">{amountLabel(h, c)}</div>}</div>
+              {isCounter(h) && (
                 <>
-                  <button className="btn icon sm ghost" aria-label={`One less ${h.name}`} disabled={c === 0} onClick={() => setHabitCount(today, h.id, c - 1)}><Minus /></button>
-                  <button className="btn icon sm" aria-label={`One more ${h.name}`} onClick={() => setHabitCount(today, h.id, Math.min(h.target * 3, c + 1))}><Plus /></button>
+                  <button className="btn icon sm ghost" aria-label={`Less ${h.name}`} disabled={c === 0} onClick={() => setHabitCount(today, h.id, bump(h, c, -1))}><Minus /></button>
+                  <button className="btn icon sm" aria-label={`More ${h.name}`} onClick={() => setHabitCount(today, h.id, bump(h, c, 1))}><Plus /></button>
                 </>
               )}
               <button className={`round-check ${done ? 'on' : ''}`} aria-pressed={done} aria-label={`${done ? 'Undo' : 'Complete'} ${h.name}`} onClick={() => setHabitCount(today, h.id, done ? 0 : h.target)}>{done && <Check />}</button>

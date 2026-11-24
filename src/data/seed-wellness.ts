@@ -34,7 +34,7 @@ export function defaultSchedule(): Record<number, string | undefined> {
 }
 
 export const HABIT_IDEAS: Omit<Habit, 'id' | 'createdAt'>[] = [
-  { name: 'Drink water', emoji: '💧', color: 'sky', days: [], target: 8, unit: 'glasses' },
+  { name: 'Drink water', emoji: '💧', color: 'sky', days: [], target: 2, unit: 'L', step: 0.25 },
   { name: 'Log my spending', emoji: '🧾', color: 'lavender', days: [], target: 1 },
   { name: '8,000 steps', emoji: '👟', color: 'mint', days: [], target: 1 },
   { name: 'Hit my protein', emoji: '🍳', color: 'butter', days: [], target: 1 },
@@ -57,12 +57,12 @@ export function demoWellness(data: AppData, today: string) {
     const log: Record<string, number> = {};
     for (const h of data.habits) {
       const r = rand();
-      if (h.target > 1) log[h.id] = r > 0.25 ? h.target : Math.floor(r * h.target * 3);
+      if (h.unit) log[h.id] = r > 0.25 ? h.target : Math.round(r * 4) * (h.step ?? 1);
       else if (r > 0.3) log[h.id] = 1;
     }
     data.habitLogs[d] = log;
   }
-  data.habitLogs[today] = { 'h-0': 3, 'h-1': 1 };
+  data.habitLogs[today] = { 'h-0': 0.75, 'h-1': 1 };
   const logs: WorkoutLog[] = [];
   for (let d = start; d < today; d = addDays(d, 1)) {
     const wd = (new Date(d + 'T00:00:00').getDay() + 6) % 7;

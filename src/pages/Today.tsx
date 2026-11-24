@@ -11,7 +11,7 @@ import { groceryOverview } from '../domain/grocery';
 import { periodKeyFor, periodLabel, shiftPeriod, daysLeft } from '../domain/period';
 import { planTotals } from '../domain/shopping';
 import { recipeStats } from '../domain/recipes';
-import { countOn, dayScore, isDone, isDue, streak, weekdayIndex } from '../domain/habits';
+import { countOn, dayScore, isDone, isDue, streak, weekdayIndex, isCounter, amountLabel, bump } from '../domain/habits';
 import { logsOn, plannedFor } from '../domain/workouts';
 import { addDays, daysBetween, fmtDate, mondayOf, money, monthName, toDate } from '../lib/format';
 import { exportBackup } from '../lib/exports';
@@ -193,12 +193,12 @@ export function TodayPage() {
                   <span className={`avatar bg-${h.color}`} style={{ borderRadius: 14, fontSize: 18 }}>{h.emoji}</span>
                   <div className="grow">
                     <div style={{ fontWeight: 700, textDecoration: done ? 'line-through' : undefined, opacity: done ? 0.6 : 1 }}>{h.name}</div>
-                    <div className="xs muted">{h.target > 1 ? `${c} of ${h.target} ${h.unit || ''}` : st > 1 ? `🔥 ${st}-day streak` : ' '}</div>
+                    <div className="xs muted">{isCounter(h) ? amountLabel(h, c) : st > 1 ? `🔥 ${st}-day streak` : ' '}</div>
                   </div>
-                  {h.target > 1 && (
+                  {isCounter(h) && (
                     <>
-                      <button className="btn icon sm ghost" aria-label={`One less ${h.name}`} disabled={c === 0 || isFuture} onClick={() => setHabitCount(day, h.id, c - 1)}><Minus /></button>
-                      <button className="btn icon sm" aria-label={`One more ${h.name}`} disabled={isFuture} onClick={() => setHabitCount(day, h.id, Math.min(h.target * 3, c + 1))}><Plus /></button>
+                      <button className="btn icon sm ghost" aria-label={`Less ${h.name}`} disabled={c === 0 || isFuture} onClick={() => setHabitCount(day, h.id, bump(h, c, -1))}><Minus /></button>
+                      <button className="btn icon sm" aria-label={`More ${h.name}`} disabled={isFuture} onClick={() => setHabitCount(day, h.id, bump(h, c, 1))}><Plus /></button>
                     </>
                   )}
                   <button className={`round-check ${done ? 'on' : ''}`} aria-label={`${done ? 'Undo' : 'Complete'} ${h.name}`} aria-pressed={done} disabled={isFuture}

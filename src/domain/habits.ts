@@ -14,7 +14,7 @@ export function countOn(data: AppData, id: ID, date: ISODate): number {
 }
 
 export function isDone(data: AppData, h: Habit, date: ISODate): boolean {
-  return countOn(data, h.id, date) >= h.target;
+  return countOn(data, h.id, date) >= h.target - 1e-9;
 }
 
 /** Consecutive scheduled days completed, ending today (today counts only once done). */
@@ -60,3 +60,14 @@ export function completionRate(data: AppData, h: Habit, today: ISODate, n = 30):
   }
   return due ? done / due : 0;
 }
+
+/** A habit you track by amount (litres, steps, pages…) rather than a single tick. */
+export const isCounter = (h: Habit) => h.target !== 1 || !!h.unit || (h.step !== undefined && h.step !== 1);
+export const stepOf = (h: Habit) => (h.step && h.step > 0 ? h.step : 1);
+const r2 = (n: number) => Math.round(n * 100) / 100;
+export const fmtAmount = (n: number) => String(r2(n));
+/** One tap of + or −. */
+export function bump(h: Habit, current: number, dir: 1 | -1): number {
+  return r2(Math.max(0, Math.min(h.target * 3, current + dir * stepOf(h))));
+}
+export const amountLabel = (h: Habit, c: number) => `${fmtAmount(c)} of ${fmtAmount(h.target)}${h.unit ? ` ${h.unit}` : ''}`;
