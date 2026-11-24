@@ -4,7 +4,7 @@ import { addDays, daysBetween, fmtDate, monthName, toISO } from '../lib/format';
 /**
  * Budget periods. With startDay = 1 a period is a calendar month.
  * With a payday start (e.g. 25) the period runs 25 Nov – 24 Dec and is named after the
- * month payday falls in ("November 2026"): the November salary pays for it.
+ * month it ends in ("December 2026") — the salary paid on 25 Nov is the December budget.
  */
 
 function clampDay(year: number, month0: number, day: number): Date {
@@ -25,21 +25,22 @@ export function parseKey(key: PeriodKey): { year: number; month0: number } {
 export function periodStart(key: PeriodKey, startDay: number): ISODate {
   const { year, month0 } = parseKey(key);
   if (startDay <= 1) return toISO(new Date(year, month0, 1));
-  return toISO(clampDay(year, month0, startDay));
+  return toISO(clampDay(year, month0 - 1, startDay));
 }
 
 export function periodEnd(key: PeriodKey, startDay: number): ISODate {
   const { year, month0 } = parseKey(key);
   if (startDay <= 1) return toISO(new Date(year, month0 + 1, 0));
-  return addDays(toISO(clampDay(year, month0 + 1, startDay)), -1);
+  return addDays(toISO(clampDay(year, month0, startDay)), -1);
 }
 
 export function periodKeyFor(date: ISODate, startDay: number): PeriodKey {
   const [y, m] = date.split('-').map(Number);
   const key = keyOf(y, m - 1);
   if (startDay <= 1) return key;
-  // Before this month's payday you're still spending last month's salary.
-  return date >= periodStart(key, startDay) ? key : shiftPeriod(key, -1);
+  // From this month's payday onwards you're in next month's budget.
+  const next = shiftPeriod(key, 1);
+  return date >= periodStart(next, startDay) ? next : key;
 }
 
 export function shiftPeriod(key: PeriodKey, n: number): PeriodKey {
