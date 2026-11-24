@@ -212,4 +212,18 @@ export async function stage2({ page, go, step, assert, money, SHOTS }) {
     await p.getByRole('heading', { name: 'Add expense' }).waitFor();
     await c.close();
   });
+
+  await step('daily challenge: swap it, then mark it done', async () => {
+    await go('today');
+    const card = page.getByTestId('daily-challenge');
+    const before = await card.locator('p').first().textContent();
+    await card.getByRole('button', { name: 'Another one' }).click();
+    const after = await card.locator('p').first().textContent();
+    assert(after !== before, `swap should change the challenge (${before})`);
+    await card.getByRole('button', { name: 'Done', exact: true }).click();
+    await card.getByText('Done — nice!').waitFor();
+    await card.getByText('🔥 1 day').waitFor();
+    await page.reload();
+    await card.getByText('Done — nice!').waitFor();
+  });
 }

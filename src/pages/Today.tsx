@@ -1,6 +1,7 @@
 import { useMemo, useState } from 'react';
 import { Check, ChevronLeft, ChevronRight, Minus, Plus } from 'lucide-react';
 import { DayStrip } from '../components/DayStrip';
+import { DailyChallenge } from '../components/DailyChallenge';
 import { resetWeek } from './Reset';
 import { Progress, Ring } from '../components/ui';
 import { getToday, useData, useStore } from '../data/store';
@@ -71,6 +72,8 @@ export function TodayPage() {
         </div>
       </div>
 
+      <DailyChallenge />
+
       {(() => {
         const dow = weekdayIndex(today);
         const current = data.resets[mondayOf(today)];
@@ -97,7 +100,7 @@ export function TodayPage() {
       <div className="grid g-main" style={{ alignItems: 'start' }}>
         <div className="stack" style={{ gap: 16 }}>
           {/* Money */}
-          <section className="card hero" data-testid="today-money">
+          <section className="card hero money-today" data-testid="today-money">
             <div className="label small" style={{ fontWeight: 700 }}>You can spend today</div>
             <div className="hero-amount num" style={{ fontSize: 46 }}>{money(s.perDay, { cents: false })}</div>
             <div className="muted small">{money(s.safeToSpend, { cents: false })} safe to spend over {s.daysLeft} day{s.daysLeft === 1 ? '' : 's'} · {money(spentToday, { cents: false })} spent today</div>

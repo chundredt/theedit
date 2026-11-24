@@ -264,6 +264,8 @@ export interface AppData {
   workoutLogs: WorkoutLog[];
   /** Weekly reset check-ins, keyed by the Monday of the week being planned. */
   resets: Record<WeekKey, WeeklyReset>;
+  /** Daily challenge per day: which one, how many swaps, done or not. */
+  challenges: Record<ISODate, { id: string; swaps: number; done: boolean }>;
 }
 
 export interface WeeklyReset {

@@ -260,6 +260,7 @@ export function emptyData(today: string): AppData {
     workoutSchedule: defaultSchedule(),
     workoutLogs: [],
     resets: {},
+    challenges: {},
   };
 }
 

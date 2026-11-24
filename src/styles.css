@@ -575,3 +575,22 @@ h2 { font-weight: 800; font-size: 18px; letter-spacing: -0.01em; }
 .quick-emoji { font-size: 26px; line-height: 1; margin-bottom: 8px; }
 .quick-income .card { border: 0; padding: 0; background: transparent; }
 @media (min-width: 701px) { .quick-grid { grid-template-columns: repeat(4, minmax(0, 1fr)); } }
+
+/* Daily challenge card (lavender with the coral flower, like a poster) */
+.challenge-card { position: relative; overflow: hidden; padding: 20px; }
+.challenge-card > * { position: relative; z-index: 1; }
+.challenge-card .challenge-text { max-width: 68%; }
+.challenge-title { font-size: 34px; line-height: 1.02; font-weight: 800; letter-spacing: -0.03em; margin-top: 10px; }
+.challenge-card::after {
+  content: ''; position: absolute; z-index: 0; right: -46px; top: 50%; transform: translateY(-50%); width: 230px; height: 230px;
+  background: no-repeat center / contain url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 200 200'%3E%3Cpath fill='%23ff5a36' d='M100 88c-6-40-2-78 22-82 26-4 30 34 6 74 32-28 66-38 76-16 10 24-28 40-70 36 38 16 56 46 38 62-18 16-46-8-60-44 2 40-14 74-38 70-26-4-20-42 8-70-34 22-72 24-76 2-4-24 36-34 72-26C42 76 20 44 36 28c16-16 44 8 64 60z'/%3E%3C/svg%3E");
+}
+@media (max-width: 520px) {
+  .challenge-card .challenge-text { max-width: 74%; }
+  .challenge-title { font-size: 30px; }
+  .challenge-card::after { width: 170px; height: 170px; right: -60px; }
+}
+/* Today's money card: sky blue, no flower, so it doesn't compete with the challenge */
+.hero.money-today, :root[data-theme='dark'] .hero.money-today { background: var(--sky); }
+@media (prefers-color-scheme: dark) { :root:not([data-theme='light']) .hero.money-today { background: var(--sky); } }
+.hero.money-today::after { display: none; }

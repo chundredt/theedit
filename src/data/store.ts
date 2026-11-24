@@ -62,6 +62,7 @@ interface State {
   /** Record a yearly cost as paid: the saved pot covers it (any shortfall is normal spending). */
   payYearly(goalId: ID, amount: number, date: ISODate, categoryId: ID): void;
   saveReset(r: WeeklyReset): void;
+  setChallenge(date: ISODate, c: { id: string; swaps: number; done: boolean }): void;
   // Food
   saveStore(s: Omit<Store, 'id'> & { id?: ID }): ID;
   deleteStore(id: ID): void;
@@ -293,6 +294,11 @@ export const useStore = create<State>((set, get) => {
         }
       });
       get().toast(`${g.name} marked as paid`);
+    },
+    setChallenge(date, c) {
+      mutate((d) => {
+        d.challenges[date] = c;
+      });
     },
     saveReset(r) {
       mutate((d) => {

@@ -113,3 +113,30 @@ describe('safe to spend with yearly-cost withdrawals', () => {
     expect(summarize(d, '2026-12', TODAY).safeToSpend).toBe(before);
   });
 });
+
+import { challengeStreak, pickChallenge, describeChallenge } from './challenges';
+
+describe('daily challenge', () => {
+  it('puts food about to expire first, and swapping gives something else', () => {
+    const d = emptyData(TODAY);
+    d.pantry = [{ id: 'p', productId: 'spinach', quantity: 100, expiry: '2026-12-04', addedOn: TODAY }];
+    const first = pickChallenge(d, TODAY, 0);
+    expect(first.challenge.id).toBe('use-up');
+    expect(first.text.title).toBe('Use up the baby spinach');
+    expect(pickChallenge(d, TODAY, 1).challenge.id).not.toBe('use-up');
+  });
+  it('fills in the protein target and avoids repeating recent challenges', () => {
+    const d = emptyData(TODAY);
+    d.settings.proteinTarget = 110;
+    expect(describeChallenge(d, TODAY, 'protein')!.title).toBe('Hit 110 g of protein');
+    d.challenges['2026-12-02'] = { id: 'walk', swaps: 0, done: true };
+    for (let i = 0; i < 25; i++) expect(pickChallenge(d, TODAY, i).challenge.id).not.toBe('walk');
+  });
+  it('counts a streak of done days', () => {
+    const d = emptyData(TODAY);
+    d.challenges = { '2026-12-01': { id: 'a', swaps: 0, done: true }, '2026-12-02': { id: 'b', swaps: 0, done: true }, [TODAY]: { id: 'c', swaps: 0, done: false } };
+    expect(challengeStreak(d, TODAY)).toBe(2);
+    d.challenges[TODAY].done = true;
+    expect(challengeStreak(d, TODAY)).toBe(3);
+  });
+});
