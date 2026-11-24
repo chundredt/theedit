@@ -87,21 +87,24 @@ await step('budget edits flow to the dashboard and over-allocation is flagged', 
   assert(Math.abs(v - 15887.6) < 0.001, `safe to spend should be 15887.60, got ${v}`);
 });
 
-await step('commission: add an estimate, mark it received lower, and the money adjusts', async () => {
+await step('commission: add it, tick it in, type the real amount, and the money adjusts', async () => {
   await go('budget');
+  await page.getByRole('button', { name: 'Edit', exact: true }).click();
   await page.getByRole('button', { name: 'Commission', exact: true }).click();
-  const est = page.getByLabel('Commission expected');
-  await est.fill('4000');
-  await est.press('Enter');
+  await page.getByRole('button', { name: 'Done', exact: true }).click();
+  const amt = page.getByLabel('Commission amount');
+  await amt.fill('4000');
+  await amt.press('Enter');
   await page.waitForTimeout(100);
-  let exp = money(await page.getByTestId('income-expected').textContent());
-  assert(exp === 29000, `expected income should be 29000, got ${exp}`);
-  await page.getByTestId('income-commission').getByRole('button', { name: 'Mark as received' }).click();
-  await page.getByLabel('Commission received').fill('3200');
-  await page.getByRole('button', { name: 'Confirm amount received' }).click();
-  await page.getByText('less than expected').waitFor();
-  const actual = money(await page.getByTestId('income-total').textContent());
-  assert(actual === 28200, `actual income should be 28200, got ${actual}`);
+  let total = money(await page.getByTestId('income-total').textContent());
+  assert(total === 29000, `expected income should be 29000, got ${total}`);
+  await page.getByRole('button', { name: 'Mark Commission as received' }).click();
+  await amt.fill('3200');
+  await amt.press('Enter');
+  await page.getByText('In · expected R4,000').waitFor();
+  total = money(await page.getByTestId('income-total').textContent());
+  assert(total === 28200, `actual income should be 28200, got ${total}`);
+  assert((await page.locator('select[aria-label$="type"]').count()) === 0, 'income type dropdown should be gone');
   await go('dashboard');
   await page.getByText('came in R800 lower than planned').waitFor();
   const v = money(await page.getByTestId('safe-to-spend').textContent());
@@ -147,10 +150,9 @@ await step('setting up the day before payday opens next month with no late-incom
   await p.getByLabel('Salary').fill('20000');
   await p.getByLabel('Allowance').fill('3000');
   await p.getByRole('button', { name: 'Start budgeting' }).click();
-  await p.getByText("You're planning").waitFor();
   assert((await p.locator('.period-nav .lbl').first().textContent()).startsWith('December 2026'), 'budget page should show December');
   assert((await p.getByText('not marked received').count()) === 0, 'no late warnings expected');
-  assert((await p.getByText('Due 25/11/2026').count()) === 2, 'salary and allowance should be due 25/11/2026');
+  assert((await p.getByText('Due 25/11', { exact: true }).count()) === 2, 'salary and allowance should be due 25/11');
   await c.close();
 });
 

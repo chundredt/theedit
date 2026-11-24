@@ -556,3 +556,10 @@ h2 { font-weight: 800; font-size: 18px; letter-spacing: -0.01em; }
   .input.sm { height: 42px; }
   .input-money .input { padding-left: 30px; }
 }
+
+/* Compact income rows */
+.income-row { display: flex; align-items: center; gap: 12px; padding: 12px 0; border-bottom: 1px solid var(--border); }
+.income-row:last-child { border-bottom: 0; }
+.income-tick { width: 40px; height: 40px; }
+.income-tick.on { background: var(--good); border-color: var(--good); color: #fff; }
+.income-tick svg { width: 20px; height: 20px; }
