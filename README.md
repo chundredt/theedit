@@ -1,4 +1,4 @@
-# RandWise
+# TheEdit
 
 A personal budgeting, grocery and meal-planning app for South Africa: ZAR, DD/MM/YYYY, debit orders, payday budget months, and Checkers / Food Lover's Market / Woolworths price tracking.
 

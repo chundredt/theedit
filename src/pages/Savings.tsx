@@ -117,7 +117,7 @@ function GoalForm({ initial, onClose }: { initial?: SavingsGoal; onClose: () => 
         <Field label="Goal name" className="full" error={touched && !name.trim() ? 'Required' : ''}><input className="input" value={name} onChange={(e) => setName(e.target.value)} placeholder="e.g. Emergency fund" /></Field>
         <Field label="Target amount" error={touched && !(Number(target) > 0) ? 'Enter a target' : ''}><MoneyInput value={target} onChange={setTarget} ariaLabel="Target amount" /></Field>
         <Field label="Target date"><DateInput value={targetDate} onChange={setTargetDate} required /></Field>
-        <Field label="Already saved before" help="Money set aside before using RandWise"><MoneyInput value={opening} onChange={setOpening} ariaLabel="Opening balance" /></Field>
+        <Field label="Already saved before" help="Money set aside before using TheEdit"><MoneyInput value={opening} onChange={setOpening} ariaLabel="Opening balance" /></Field>
         <Field label="Monthly contribution" help={need > 0 ? `You need ${money(need)} a month to make the date` : undefined}>
           <MoneyInput value={monthly} onChange={setMonthly} ariaLabel="Monthly contribution" />
         </Field>

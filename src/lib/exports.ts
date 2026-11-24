@@ -15,7 +15,7 @@ export function exportTransactions(data: AppData, txs: Transaction[], name = 'tr
       .sort((a, b) => a.date.localeCompare(b.date))
       .map((t) => [fmtDate(t.date), t.description, t.amount.toFixed(2), cat.get(t.categoryId)?.name || 'Deleted category', cat.get(t.categoryId)?.group || '', t.method, t.storeId ? store.get(t.storeId) : '', t.goalId ? goal.get(t.goalId) : '', t.notes]),
   ];
-  download(`randwise-${name}.csv`, toCSV(rows));
+  download(`theedit-${name}.csv`, toCSV(rows));
 }
 
 export function exportBudget(data: AppData, key: PeriodKey, today: string) {
@@ -35,9 +35,9 @@ export function exportBudget(data: AppData, key: PeriodKey, today: string) {
     ['Total spent', '', '', s.spent.toFixed(2)],
     ['Total saved', '', '', s.saved.toFixed(2)],
   ];
-  download(`randwise-budget-${key}.csv`, toCSV(rows));
+  download(`theedit-budget-${key}.csv`, toCSV(rows));
 }
 
 export function exportBackup(data: AppData) {
-  download(`randwise-backup-${new Date().toISOString().slice(0, 10)}.json`, JSON.stringify(data, null, 2), 'application/json');
+  download(`theedit-backup-${new Date().toISOString().slice(0, 10)}.json`, JSON.stringify(data, null, 2), 'application/json');
 }

@@ -1,6 +1,6 @@
-# RandWise — architecture & roadmap
+# TheEdit — architecture & roadmap
 
-RandWise is a personal budgeting and meal-planning app for South Africa (ZAR, DD/MM/YYYY,
+TheEdit is a personal budgeting and meal-planning app for South Africa (ZAR, DD/MM/YYYY,
 SA supermarkets). This document is the plan the build follows.
 
 ## 1. Architecture

@@ -55,8 +55,8 @@ const ALL = [TODAY, RESET, ...MONEY, ...FOOD, ...WELLNESS, SETTINGS];
 function Brand() {
   return (
     <div className="brand">
-      <div className="brand-mark">R</div>
-      <div className="brand-name">RandWise</div>
+      <div className="brand-mark">E</div>
+      <div className="brand-name">TheEdit</div>
     </div>
   );
 }
@@ -113,7 +113,7 @@ export default function App() {
         <main className="main">
           {saveError && (
             <div className="banner danger" style={{ marginBottom: 16 }}>
-              <AlertTriangle /> <div>Your browser isn't letting RandWise save (private mode or storage full). Changes will be lost when you close this tab — export a backup from Settings.</div>
+              <AlertTriangle /> <div>Your browser isn't letting TheEdit save (private mode or storage full). Changes will be lost when you close this tab — export a backup from Settings.</div>
             </div>
           )}
           <Page key={`${route}-${hidden}`} />

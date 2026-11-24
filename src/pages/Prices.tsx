@@ -243,7 +243,7 @@ function Import() {
         )}
         {mode === 'link' && (
           <div className="mt-16 stack" style={{ gap: 10 }}>
-            <Banner>Saving a link keeps the catalogue handy with its validity dates. RandWise can't read store websites directly (they don't offer a public feed), so open the link and paste the prices you care about.</Banner>
+            <Banner>Saving a link keeps the catalogue handy with its validity dates. TheEdit can't read store websites directly (they don't offer a public feed), so open the link and paste the prices you care about.</Banner>
             <div><button className="btn primary" disabled={!url.trim()} onClick={() => { saveCatalogue({ storeId, title: title || 'Catalogue', url: url.trim(), validFrom: today, validTo, addedOn: today, itemCount: 0 }); setUrl(''); setTitle(''); toast('Catalogue link saved'); }}>Save link</button></div>
           </div>
         )}

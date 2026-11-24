@@ -572,7 +572,7 @@ export const useStore = create<State>((set, get) => {
     },
     importData(json) {
       const parsed = JSON.parse(json);
-      if (!parsed || !Array.isArray(parsed.transactions) || !parsed.settings || !Array.isArray(parsed.categories)) throw new Error('This file is not a RandWise backup.');
+      if (!parsed || !Array.isArray(parsed.transactions) || !parsed.settings || !Array.isArray(parsed.categories)) throw new Error('This file is not a TheEdit backup.');
       const base = emptyData(getToday());
       commit(migrate({ ...base, ...parsed }));
     },

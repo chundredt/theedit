@@ -37,7 +37,7 @@ const go = (route) => page.goto(`${BASE}?today=${TODAY}&show#${route}`);
 
 await step('first run shows onboarding and can set up a fresh budget', async () => {
   await go('dashboard');
-  await page.getByText('Welcome to RandWise').waitFor();
+  await page.getByText('Welcome to TheEdit').waitFor();
   await page.getByText('Set up my own budget').click();
   assert((await page.getByLabel('Pay day').inputValue()) === '25', 'payday should default to the 25th');
   await page.getByLabel('Salary').fill('20 000');

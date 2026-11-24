@@ -25,7 +25,7 @@ export function Onboarding() {
       <div className="modal onboard" role="dialog" aria-modal="true" aria-label="Welcome">
         <div className="modal-head">
           <div>
-            <h2>Welcome to RandWise</h2>
+            <h2>Welcome to TheEdit</h2>
             <p className="muted small mt-8">Your budget, groceries, meals and savings in one calm place. Everything is saved on this device.</p>
           </div>
         </div>
