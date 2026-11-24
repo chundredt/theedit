@@ -77,7 +77,7 @@ export function PantryPage() {
         </Card>
       </div>
       {editing && <PantryForm initial={editing === 'new' ? undefined : editing} onClose={() => setEditing(null)} />}
-      {view && <RecipeDetail recipe={view} onClose={() => setView(null)} onEdit={() => setView(null)} onPlan={() => { location.hash = '/meals'; }} />}
+      {view && <RecipeDetail recipe={view} onClose={() => setView(null)} onEdit={() => setView(null)} onPlan={() => { location.hash = 'meals'; }} />}
     </>
   );
 }

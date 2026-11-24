@@ -76,7 +76,7 @@ export function Dashboard() {
                 <span className="ic" style={{ background: bg, color: fg }}><Ic /></span>
                 <div className="grow">
                   {i.text}
-                  {i.route && <> <a href={`#/${i.route}`} className="small" style={{ fontWeight: 600 }}>View</a></>}
+                  {i.route && <> <a href={`#${i.route}`} className="small" style={{ fontWeight: 600 }}>View</a></>}
                 </div>
               </div>
             );
@@ -105,7 +105,7 @@ export function Dashboard() {
         <div className="stack">
           <Card title="Budget progress" action={<button className="link" onClick={() => go('budget')}>Edit budget</button>}>
             {variableRows.length === 0 && fixedRow.planned === 0 ? (
-              <p className="muted small">Set amounts for your categories in <a href="#/budget">Budget</a> to see progress here.</p>
+              <p className="muted small">Set amounts for your categories in <a href="#budget">Budget</a> to see progress here.</p>
             ) : (
               <>
                 {variableRows.map((r) => <BudgetRowView key={r.category.id} row={r} />)}
@@ -139,7 +139,7 @@ export function Dashboard() {
         <div className="stack">
           <Card title="Upcoming payments" action={<span className="chip">{s.bills.filter((b) => b.status !== 'paid').length} unpaid</span>}>
             <BillList bills={s.bills} limit={7} showPaid={false} />
-            {s.bills.some((b) => b.status === 'paid') && <p className="muted xs mt-8">{s.bills.filter((b) => b.status === 'paid').length} already paid this month · <a href="#/budget">see all</a></p>}
+            {s.bills.some((b) => b.status === 'paid') && <p className="muted xs mt-8">{s.bills.filter((b) => b.status === 'paid').length} already paid this month · <a href="#budget">see all</a></p>}
           </Card>
 
           <Card title="Groceries" icon={<ShoppingBasket size={17} />} action={<button className="link" onClick={() => go('groceries' as Route)}>Open</button>}>
@@ -163,7 +163,7 @@ export function Dashboard() {
                 </div>
                 <span className={`chip ${p.status === 'behind' || p.status === 'overdue' ? 'warn' : 'good'}`}>{p.status === 'done' ? 'Done' : p.status === 'on-track' ? 'On track' : p.status === 'overdue' ? 'Past date' : 'Behind'}</span>
               </div>
-            )) : <p className="muted small">No goals yet. <a href="#/savings">Create one</a>.</p>}
+            )) : <p className="muted small">No goals yet. <a href="#savings">Create one</a>.</p>}
           </Card>
         </div>
       </div>

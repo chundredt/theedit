@@ -34,12 +34,12 @@ export function usePeriod(): [PeriodKey, (p: PeriodKey) => void] {
 
 export type Route =
   | 'dashboard' | 'budget' | 'transactions' | 'savings' | 'reports'
-  | 'groceries' | 'meals' | 'recipes' | 'shopping' | 'pantry' | 'prices' | 'settings';
+  | 'groceries' | 'meals' | 'recipes' | 'shopping' | 'pantry' | 'prices' | 'preferences';
 
-const ROUTES: Route[] = ['dashboard', 'budget', 'transactions', 'savings', 'reports', 'groceries', 'meals', 'recipes', 'shopping', 'pantry', 'prices', 'settings'];
+const ROUTES: Route[] = ['dashboard', 'budget', 'transactions', 'savings', 'reports', 'groceries', 'meals', 'recipes', 'shopping', 'pantry', 'prices', 'preferences'];
 
 function parseHash(): Route {
-  const h = location.hash.replace(/^#\/?/, '').split('?')[0] as Route;
+  const h = location.hash.replace(/^#\/?/, '').split(/[?/]/)[0] as Route;
   return ROUTES.includes(h) ? h : 'dashboard';
 }
 
@@ -57,5 +57,5 @@ export function useRoute(): Route {
 }
 
 export function go(route: Route) {
-  location.hash = `/${route}`;
+  location.hash = route;
 }

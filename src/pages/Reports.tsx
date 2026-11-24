@@ -1,3 +1,4 @@
+import { inHostedViewer } from '../lib/csv';
 import { useMemo, useState } from 'react';
 import { Bar, BarChart, CartesianGrid, Legend, ResponsiveContainer, Tooltip, XAxis, YAxis } from 'recharts';
 import { Download, Printer, TrendingDown, TrendingUp } from 'lucide-react';
@@ -52,7 +53,7 @@ export function ReportsPage() {
           {periods.map((p) => <option key={p} value={p}>{periodLabel(p)}</option>)}
         </select>
         <button className="btn" onClick={() => exportBudget(data, period, today)}><Download /> CSV</button>
-        <button className="btn hide-sm" onClick={() => window.print()}><Printer /> Print</button>
+        {!inHostedViewer && <button className="btn hide-sm" onClick={() => window.print()}><Printer /> Print</button>}
       </PageHeader>
 
       <div className="grid g-6">

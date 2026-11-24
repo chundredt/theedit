@@ -73,14 +73,14 @@ export function GroceriesPage() {
           </div>
 
           <div className="grid g-3 mt-16">
-            <a className="card" href="#/meals" style={{ textDecoration: 'none', color: 'inherit' }}>
+            <a className="card" href="#meals" style={{ textDecoration: 'none', color: 'inherit' }}>
               <div className="row"><span className="avatar" style={{ background: 'var(--sage-soft)', color: 'var(--sage-strong)' }}><CalendarDays size={18} /></span><div><b>Meal planner</b><div className="muted small">Plan the week's meals</div></div></div>
             </a>
-            <a className="card" href="#/shopping" style={{ textDecoration: 'none', color: 'inherit' }}>
+            <a className="card" href="#shopping" style={{ textDecoration: 'none', color: 'inherit' }}>
               <div className="row"><span className="avatar" style={{ background: 'var(--sage-soft)', color: 'var(--sage-strong)' }}><ListChecks size={18} /></span>
                 <div><b>This week's list</b><div className="muted small">{list.items.length ? <>{list.items.length} items · est. {money(list.total, { cents: false })} {g.weeklyNow > 0 && <span className={list.total > g.weeklyNow ? 'danger' : 'good'}>({list.total > g.weeklyNow ? 'over' : 'within'} allowance)</span>}</> : 'Plan meals to generate it'}</div></div></div>
             </a>
-            <a className="card" href="#/prices" style={{ textDecoration: 'none', color: 'inherit' }}>
+            <a className="card" href="#prices" style={{ textDecoration: 'none', color: 'inherit' }}>
               <div className="row"><span className="avatar" style={{ background: 'var(--sage-soft)', color: 'var(--sage-strong)' }}><Tags size={18} /></span><div><b>Specials</b><div className="muted small">{specials} active special{specials === 1 ? '' : 's'} recorded</div></div></div>
             </a>
           </div>

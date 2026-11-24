@@ -33,7 +33,7 @@ const page = await ctx.newPage();
 const errors = [];
 page.on('pageerror', (e) => errors.push(e.message));
 page.on('console', (m) => m.type() === 'error' && !/fonts\.g/.test(m.text()) && errors.push(m.text()));
-const go = (route) => page.goto(`${BASE}?today=${TODAY}#/${route}`);
+const go = (route) => page.goto(`${BASE}?today=${TODAY}#${route}`);
 
 await step('first run shows onboarding and can set up a fresh budget', async () => {
   await go('dashboard');
@@ -98,10 +98,10 @@ await step('transactions can be edited and deleted (with undo)', async () => {
 });
 
 await step('sample data loads and every page renders without errors', async () => {
-  await go('settings');
+  await go('preferences');
   await page.getByRole('button', { name: 'Load sample data' }).click();
   await page.getByRole('button', { name: 'Load sample data' }).last().click();
-  for (const r of ['dashboard', 'budget', 'transactions', 'groceries', 'savings', 'reports', 'meals', 'recipes', 'shopping', 'pantry', 'prices', 'settings']) {
+  for (const r of ['dashboard', 'budget', 'transactions', 'groceries', 'savings', 'reports', 'meals', 'recipes', 'shopping', 'pantry', 'prices', 'preferences']) {
     await go(r);
     await page.waitForTimeout(250);
     await page.screenshot({ path: `${SHOTS}${r}.png`, fullPage: true });
@@ -117,10 +117,10 @@ if (STAGE !== '1') {
 await step('mobile layout has bottom navigation and no horizontal scroll', async () => {
   const m = await browser.newContext({ viewport: { width: 390, height: 844 }, deviceScaleFactor: 1 });
   const mp = await m.newPage();
-  await mp.goto(`${BASE}?today=${TODAY}#/dashboard`);
+  await mp.goto(`${BASE}?today=${TODAY}#dashboard`);
   await mp.evaluate((d) => localStorage.setItem('randwise:data:v1', d), await page.evaluate(() => localStorage.getItem('randwise:data:v1')));
   for (const r of ['dashboard', 'budget', 'meals', 'shopping']) {
-    await mp.goto(`${BASE}?today=${TODAY}#/${r}`);
+    await mp.goto(`${BASE}?today=${TODAY}#${r}`);
     await mp.reload();
     await mp.waitForTimeout(250);
     await mp.screenshot({ path: `${SHOTS}mobile-${r}.png`, fullPage: true });

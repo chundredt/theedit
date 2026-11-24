@@ -1,3 +1,4 @@
+import { inHostedViewer } from '../lib/csv';
 import { useMemo, useState } from 'react';
 import { Check, ChevronLeft, ChevronRight, ListChecks, Plus, ShoppingCart, X, Printer } from 'lucide-react';
 import { Banner, Card, Empty, Field, Modal, MoneyInput, PageHeader } from '../components/ui';
@@ -43,7 +44,7 @@ export function ShoppingPage() {
           <div className="lbl">Week of {fmtDate(week).slice(0, 5)}<small>{week === mondayOf(today) ? 'This week' : fmtDate(week)}</small></div>
           <button className="btn ghost icon sm" onClick={() => setWeek(addDays(week, 7))} aria-label="Next week"><ChevronRight /></button>
         </div>
-        <button className="btn hide-sm" onClick={() => window.print()}><Printer /> Print</button>
+        {!inHostedViewer && <button className="btn hide-sm" onClick={() => window.print()}><Printer /> Print</button>}
         <button className="btn primary" disabled={!list.items.length && !state.extras.length} onClick={() => setCompleting(true)}><ShoppingCart /> Finish shop</button>
       </PageHeader>
 
@@ -58,7 +59,7 @@ export function ShoppingPage() {
             <div className="card stat"><div className="label">Saved by specials</div><div className="value good">{money(list.specialsSaving)}</div><div className="hint">vs normal prices</div></div>
           </div>
           {!within && <div className="mt-16"><Banner tone="warn">This list is over your weekly allowance. Swap a dinner for a cheaper recipe (lentils, pilchards, eggs and soya mince are the best protein per rand), or use what's in your pantry.</Banner></div>}
-          {list.unpriced > 0 && <div className="mt-16"><Banner>{list.unpriced} item{list.unpriced === 1 ? ' has' : 's have'} no price yet, so the total is understated. <a href="#/prices">Add prices</a>.</Banner></div>}
+          {list.unpriced > 0 && <div className="mt-16"><Banner>{list.unpriced} item{list.unpriced === 1 ? ' has' : 's have'} no price yet, so the total is understated. <a href="#prices">Add prices</a>.</Banner></div>}
 
           <div className="grid g-main mt-16" style={{ alignItems: 'start' }}>
             <div className="stack">
@@ -89,7 +90,7 @@ export function ShoppingPage() {
                                 {it.options.map((o) => <option key={o.store.id} value={o.store.id}>{o.store.name} {money(o.cost)}{o.store.id === it.recommended?.id ? ' ★' : ''}</option>)}
                               </select>
                             </>
-                          ) : <a className="small" href="#/prices">Add price</a>}
+                          ) : <a className="small" href="#prices">Add price</a>}
                         </div>
                       </div>
                     );

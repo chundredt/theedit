@@ -13,8 +13,22 @@ export function toCSV(rows: (string | number | undefined | null)[][]): string {
     .join('\r\n');
 }
 
-export function download(filename: string, content: string, type = 'text/csv;charset=utf-8') {
-  const blob = new Blob([type.startsWith('text/csv') ? '﻿' + content : content], { type });
+/** True when running inside the claude.ai artifact viewer (which offers its own save dialog and blocks printing). */
+export const inHostedViewer = typeof window !== 'undefined' && !!(window as any).claude?.use;
+
+export async function download(filename: string, content: string, type = 'text/csv;charset=utf-8') {
+  const blob = new Blob([type.startsWith('text/csv') ? '\ufeff' + content : content], { type });
+  if (inHostedViewer) {
+    try {
+      const d = await (window as any).claude.use('downloads');
+      if (d) {
+        await d.save({ filename, data: blob });
+        return;
+      }
+    } catch (e: any) {
+      if (e?.code === 'declined' || e?.code === 'rate_limited') return;
+    }
+  }
   const url = URL.createObjectURL(blob);
   const a = document.createElement('a');
   a.href = url;

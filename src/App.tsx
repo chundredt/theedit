@@ -37,7 +37,7 @@ const FOOD: NavItem[] = [
   { route: 'pantry', label: 'Pantry', icon: Archive, page: PantryPage },
   { route: 'prices', label: 'Prices & specials', icon: Tags, page: PricesPage },
 ];
-const SETTINGS: NavItem = { route: 'settings', label: 'Settings & data', icon: SettingsIcon, page: SettingsPage };
+const SETTINGS: NavItem = { route: 'preferences', label: 'Settings & data', icon: SettingsIcon, page: SettingsPage };
 const ALL = [...MONEY, ...FOOD, SETTINGS];
 
 function Brand() {
@@ -58,7 +58,7 @@ export default function App() {
   const current = ALL.find((n) => n.route === route) || MONEY[0];
   const Page = current.page;
   const link = (n: NavItem) => (
-    <a key={n.route} href={`#/${n.route}`} className={`nav-link ${route === n.route ? 'active' : ''}`} aria-current={route === n.route ? 'page' : undefined}>
+    <a key={n.route} href={`#${n.route}`} className={`nav-link ${route === n.route ? 'active' : ''}`} aria-current={route === n.route ? 'page' : undefined}>
       <n.icon /> {n.label}
     </a>
   );
@@ -78,7 +78,7 @@ export default function App() {
       <div style={{ flex: 1, minWidth: 0 }}>
         <header className="mobile-top">
           <Brand />
-          <button className="btn ghost icon" onClick={() => go('settings')} aria-label="Settings"><SettingsIcon /></button>
+          <button className="btn ghost icon" onClick={() => go('preferences')} aria-label="Settings"><SettingsIcon /></button>
         </header>
         <main className="main">
           {saveError && (

@@ -108,11 +108,11 @@ export async function stage2({ page, go, step, assert, money, SHOTS }) {
   });
 
   await step('vegetarian setting removes meat recipes from suggestions', async () => {
-    await go('settings');
+    await go('preferences');
     await page.locator('select').filter({ hasText: 'Vegetarian' }).selectOption('vegetarian');
     await go('recipes');
     assert((await page.getByText('Chicken & potato curry').count()) === 0, 'chicken curry still shown');
-    await go('settings');
+    await go('preferences');
     await page.locator('select').filter({ hasText: 'Vegetarian' }).selectOption('none');
   });
 }
