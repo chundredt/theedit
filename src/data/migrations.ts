@@ -1,7 +1,8 @@
 import type { AppData } from '../domain/types';
+import { defaultRoutines, defaultSchedule } from './seed-wellness';
 
 /** Bump when the stored shape changes, and add a step below. */
-export const CURRENT_VERSION = 2;
+export const CURRENT_VERSION = 3;
 
 type Migration = (data: any) => any;
 const MIGRATIONS: Record<number, Migration> = {
@@ -12,6 +13,8 @@ const MIGRATIONS: Record<number, Migration> = {
         l.kind ??= /salar/i.test(l.name) ? 'salary' : /commission/i.test(l.name) ? 'commission' : /allowance/i.test(l.name) ? 'allowance' : 'other';
     return d;
   },
+  // v3: habits and workouts.
+  3: (d) => ({ habits: [], habitLogs: {}, routines: defaultRoutines(), workoutSchedule: defaultSchedule(), workoutLogs: [], ...d }),
 };
 
 export function migrate(raw: any): AppData {

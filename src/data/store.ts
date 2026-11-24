@@ -1,6 +1,6 @@
 import { create } from 'zustand';
 import type {
-  AppData, Budget, Catalogue, Category, ID, IncomeLine, ISODate, MealPlanWeek, MealSlot, MealType, PantryItem,
+  AppData, Budget, Catalogue, Habit, Routine, WorkoutLog, Category, ID, IncomeLine, ISODate, MealPlanWeek, MealSlot, MealType, PantryItem,
   PeriodKey, PriceRecord, Product, Recipe, SavingsGoal, Settings, Store, Transaction, WeekKey,
 } from '../domain/types';
 import { demoData, emptyData, PALETTE } from './seed';
@@ -80,6 +80,15 @@ interface State {
   completeShop(week: WeekKey, spend: { storeId: ID; amount: number }[], date: ISODate, opts: { leftovers: boolean; deductPantry: boolean }): void;
   savePantry(p: Omit<PantryItem, 'id' | 'addedOn'> & { id?: ID; addedOn?: ISODate }): void;
   deletePantry(id: ID): void;
+  // Habits & workouts
+  setHabitCount(date: ISODate, habitId: ID, count: number): void;
+  saveHabit(h: Omit<Habit, 'id' | 'createdAt'> & { id?: ID; createdAt?: ISODate }): ID;
+  deleteHabit(id: ID): void;
+  saveRoutine(r: Omit<Routine, 'id'> & { id?: ID }): ID;
+  deleteRoutine(id: ID): void;
+  setSchedule(day: number, routineId: ID | undefined): void;
+  saveWorkoutLog(l: Omit<WorkoutLog, 'id'> & { id?: ID }): ID;
+  deleteWorkoutLog(id: ID): void;
   // Whole-data
   loadDemo(): void;
   startFresh(setup?: { salary: number; commission: number; allowance: number; grocery: number; startDay: number; name?: string }): void;
@@ -425,6 +434,66 @@ export const useStore = create<State>((set, get) => {
       mutate((d) => {
         d.pantry = d.pantry.filter((p) => p.id !== id);
       }, 'Removed from pantry');
+    },
+
+    setHabitCount(date, habitId, count) {
+      mutate((d) => {
+        const day = (d.habitLogs[date] ||= {});
+        if (count > 0) day[habitId] = count;
+        else delete day[habitId];
+      });
+    },
+    saveHabit(h) {
+      const id = h.id || uid();
+      mutate((d) => {
+        const e = d.habits.find((x) => x.id === id);
+        if (e) Object.assign(e, h);
+        else d.habits.push({ ...h, id, createdAt: h.createdAt || getToday() } as Habit);
+      });
+      return id;
+    },
+    deleteHabit(id) {
+      const name = get().data.habits.find((h) => h.id === id)?.name;
+      mutate((d) => {
+        d.habits = d.habits.filter((h) => h.id !== id);
+        for (const day of Object.values(d.habitLogs)) delete day[id];
+      }, `Deleted habit “${name}”`);
+    },
+    saveRoutine(r) {
+      const id = r.id || uid();
+      mutate((d) => {
+        const e = d.routines.find((x) => x.id === id);
+        if (e) Object.assign(e, r);
+        else d.routines.push({ ...r, id } as Routine);
+      });
+      return id;
+    },
+    deleteRoutine(id) {
+      const name = get().data.routines.find((r) => r.id === id)?.name;
+      mutate((d) => {
+        d.routines = d.routines.filter((r) => r.id !== id);
+        for (const k of Object.keys(d.workoutSchedule)) if (d.workoutSchedule[+k] === id) delete d.workoutSchedule[+k];
+      }, `Deleted “${name}”`);
+    },
+    setSchedule(day, routineId) {
+      mutate((d) => {
+        if (routineId) d.workoutSchedule[day] = routineId;
+        else delete d.workoutSchedule[day];
+      });
+    },
+    saveWorkoutLog(l) {
+      const id = l.id || uid();
+      mutate((d) => {
+        const e = d.workoutLogs.find((x) => x.id === id);
+        if (e) Object.assign(e, l);
+        else d.workoutLogs.push({ ...l, id } as WorkoutLog);
+      });
+      return id;
+    },
+    deleteWorkoutLog(id) {
+      mutate((d) => {
+        d.workoutLogs = d.workoutLogs.filter((x) => x.id !== id);
+      }, 'Workout removed');
     },
 
     loadDemo() {

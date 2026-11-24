@@ -1,7 +1,7 @@
 import { useState, type ComponentType } from 'react';
 import {
   LayoutDashboard, Wallet, ReceiptText, PiggyBank, BarChart3, ShoppingBasket, CalendarDays, ChefHat,
-  ListChecks, Archive, Tags, Settings as SettingsIcon, Plus, MoreHorizontal, AlertTriangle,
+  ListChecks, Archive, Tags, Settings as SettingsIcon, Plus, MoreHorizontal, AlertTriangle, Sun, Dumbbell, Sparkles,
 } from 'lucide-react';
 import { go, useRoute, useUI, type Route } from './lib/ui-state';
 import { useStore } from './data/store';
@@ -9,6 +9,9 @@ import { Modal, Toasts } from './components/ui';
 import { TransactionForm } from './components/TransactionForm';
 import { Onboarding } from './components/Onboarding';
 import { Dashboard } from './pages/Dashboard';
+import { TodayPage } from './pages/Today';
+import { HabitsPage } from './pages/Habits';
+import { WorkoutsPage } from './pages/Workouts';
 import { BudgetPage } from './pages/Budget';
 import { TransactionsPage } from './pages/Transactions';
 import { GroceriesPage } from './pages/Groceries';
@@ -22,8 +25,9 @@ import { PantryPage } from './pages/Pantry';
 import { PricesPage } from './pages/Prices';
 
 interface NavItem { route: Route; label: string; icon: ComponentType<{ className?: string }>; page: ComponentType }
+const TODAY: NavItem = { route: 'today', label: 'Today', icon: Sun, page: TodayPage };
 const MONEY: NavItem[] = [
-  { route: 'dashboard', label: 'Dashboard', icon: LayoutDashboard, page: Dashboard },
+  { route: 'dashboard', label: 'Money overview', icon: LayoutDashboard, page: Dashboard },
   { route: 'budget', label: 'Budget', icon: Wallet, page: BudgetPage },
   { route: 'transactions', label: 'Transactions', icon: ReceiptText, page: TransactionsPage },
   { route: 'savings', label: 'Savings goals', icon: PiggyBank, page: SavingsPage },
@@ -37,8 +41,12 @@ const FOOD: NavItem[] = [
   { route: 'pantry', label: 'Pantry', icon: Archive, page: PantryPage },
   { route: 'prices', label: 'Prices & specials', icon: Tags, page: PricesPage },
 ];
+const WELLNESS: NavItem[] = [
+  { route: 'workouts', label: 'Workouts', icon: Dumbbell, page: WorkoutsPage },
+  { route: 'habits', label: 'Habits', icon: Sparkles, page: HabitsPage },
+];
 const SETTINGS: NavItem = { route: 'preferences', label: 'Settings & data', icon: SettingsIcon, page: SettingsPage };
-const ALL = [...MONEY, ...FOOD, SETTINGS];
+const ALL = [TODAY, ...MONEY, ...FOOD, ...WELLNESS, SETTINGS];
 
 function Brand() {
   return (
@@ -55,7 +63,7 @@ export default function App() {
   const saveError = useStore((s) => s.saveError);
   const { addOpen, setAddOpen } = useUI();
   const [more, setMore] = useState(false);
-  const current = ALL.find((n) => n.route === route) || MONEY[0];
+  const current = ALL.find((n) => n.route === route) || TODAY;
   const Page = current.page;
   const link = (n: NavItem) => (
     <a key={n.route} href={`#${n.route}`} className={`nav-link ${route === n.route ? 'active' : ''}`} aria-current={route === n.route ? 'page' : undefined}>
@@ -68,10 +76,13 @@ export default function App() {
       <aside className="sidebar" aria-label="Main navigation">
         <Brand />
         <button className="btn primary" style={{ margin: '0 4px 8px' }} onClick={() => setAddOpen(true)}><Plus /> Add expense</button>
+        {link(TODAY)}
         <div className="nav-group">Money</div>
         {MONEY.map(link)}
         <div className="nav-group">Food & groceries</div>
         {FOOD.map(link)}
+        <div className="nav-group">Body & mind</div>
+        {WELLNESS.map(link)}
         <div className="sidebar-foot">{link(SETTINGS)}</div>
       </aside>
 
@@ -91,9 +102,8 @@ export default function App() {
       </div>
 
       <nav className="bottom-nav" aria-label="Mobile navigation">
-        {[MONEY[0], MONEY[1]].map((n) => (
-          <button key={n.route} className={route === n.route ? 'active' : ''} onClick={() => go(n.route)}><n.icon />{n.label === 'Dashboard' ? 'Home' : n.label}</button>
-        ))}
+        <button className={route === 'today' ? 'active' : ''} onClick={() => go('today')}><Sun />Today</button>
+        <button className={MONEY.some((m) => m.route === route) ? 'active' : ''} onClick={() => go('dashboard')}><Wallet />Money</button>
         <button onClick={() => setAddOpen(true)} aria-label="Add expense"><span className="add"><Plus /></span></button>
         <button className={FOOD.some((f) => f.route === route) ? 'active' : ''} onClick={() => go('groceries')}><ShoppingBasket />Food</button>
         <button onClick={() => setMore(true)}><MoreHorizontal />More</button>

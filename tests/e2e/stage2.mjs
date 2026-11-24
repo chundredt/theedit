@@ -115,4 +115,43 @@ export async function stage2({ page, go, step, assert, money, SHOTS }) {
     await go('preferences');
     await page.locator('select').filter({ hasText: 'Vegetarian' }).selectOption('none');
   });
+
+  await step('today: tick habits, count water and mark the workout done', async () => {
+    await go('today');
+    const chip = page.getByTestId('today-habits').locator('.chip');
+    const before = await chip.textContent();
+    await page.getByRole('button', { name: 'Complete 8,000 steps' }).click();
+    const after = await chip.textContent();
+    assert(Number(after.split('/')[0]) === Number(before.split('/')[0]) + 1, `habit count ${before} → ${after}`);
+    await page.getByRole('button', { name: 'One more Drink water' }).click();
+    await page.getByText('4 of 8 glasses').waitFor();
+    await page.getByTestId('today-workout').getByRole('button', { name: 'Mark done' }).click();
+    await page.getByTestId('today-workout').getByText('Done · 30 minutes').waitFor();
+    await page.reload();
+    await page.getByText('4 of 8 glasses').waitFor();
+    await page.screenshot({ path: `${SHOTS}today.png`, fullPage: true });
+  });
+
+  await step('habits: add from ideas and create a custom habit', async () => {
+    await go('habits');
+    await page.getByRole('button', { name: /Read 10 minutes/ }).click();
+    await page.locator('.list-item', { hasText: 'Read 10 minutes' }).waitFor();
+    await page.getByRole('button', { name: 'New habit' }).click();
+    await page.getByPlaceholder('e.g. Walk after dinner').fill('Vitamins');
+    await page.locator('.modal').getByRole('button', { name: 'Mon', exact: true }).click();
+    await page.getByRole('button', { name: 'Save', exact: true }).click();
+    await page.locator('.list-item', { hasText: 'Vitamins' }).getByText('Mon').waitFor();
+    await page.screenshot({ path: `${SHOTS}habits.png`, fullPage: true });
+  });
+
+  await step('workouts: tick an exercise on a planned day and change the weekly plan', async () => {
+    await go('workouts');
+    await page.getByRole('tab', { name: /Monday/ }).click();
+    await page.getByRole('button', { name: 'Done: Plank' }).click();
+    await page.getByTestId('workout-today').getByText('In progress').waitFor();
+    await page.getByLabel('Sunday workout').selectOption('r-yoga');
+    await page.getByRole('tab', { name: /Sunday/ }).click();
+    await page.getByTestId('workout-today').getByText('Yoga & mobility').waitFor();
+    await page.screenshot({ path: `${SHOTS}workouts.png`, fullPage: true });
+  });
 }

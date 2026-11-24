@@ -4,6 +4,7 @@ import { addDays, mondayOf, round2 } from '../lib/format';
 import { dueDateInPeriod, periodKeyFor, periodStart, shiftPeriod, periodEnd } from '../domain/period';
 import { autoFillWeek, emptyWeek } from '../domain/shopping';
 import { uid } from '../lib/id';
+import { defaultRoutines, defaultSchedule, demoWellness } from './seed-wellness';
 
 // Chart palette — validated for colour-blind separation (see docs/ARCHITECTURE.md).
 export const PALETTE = ['#3F8F5A', '#3A78C4', '#D2663E', '#A15BB0', '#C98F0A', '#14A3A0', '#5A55C8', '#DB5E7E'];
@@ -252,6 +253,11 @@ export function emptyData(today: string): AppData {
     mealPlans: {},
     shopping: {},
     pantry: [],
+    habits: [],
+    habitLogs: {},
+    routines: defaultRoutines(),
+    workoutSchedule: defaultSchedule(),
+    workoutLogs: [],
   };
 }
 
@@ -349,5 +355,6 @@ export function demoData(today: string): AppData {
   data.catalogues = [
     { id: uid(), storeId: 'checkers', title: 'Checkers weekly specials (link only)', url: 'https://www.checkers.co.za/specials', addedOn: today, itemCount: 0, validFrom: addDays(today, -3), validTo: addDays(today, 5) },
   ];
+  demoWellness(data, today);
   return data;
 }

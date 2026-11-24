@@ -246,4 +246,61 @@ export interface AppData {
   mealPlans: Record<WeekKey, MealPlanWeek>;
   shopping: Record<WeekKey, ShoppingState>;
   pantry: PantryItem[];
+  habits: Habit[];
+  /** date → habitId → count done that day (1 for a simple yes/no habit). */
+  habitLogs: Record<ISODate, Record<ID, number>>;
+  routines: Routine[];
+  /** Weekday (0 = Monday … 6 = Sunday) → routine planned for that day. */
+  workoutSchedule: Record<number, ID | undefined>;
+  workoutLogs: WorkoutLog[];
+}
+
+export type PastelColor = 'lavender' | 'coral' | 'periwinkle' | 'pink' | 'mint' | 'butter' | 'sky';
+export const PASTELS: PastelColor[] = ['lavender', 'coral', 'periwinkle', 'pink', 'mint', 'butter', 'sky'];
+
+export interface Habit {
+  id: ID;
+  name: string;
+  emoji: string;
+  color: PastelColor;
+  /** Weekdays it applies to (0 = Monday … 6 = Sunday). Empty = every day. */
+  days: number[];
+  /** Times per day for counted habits (e.g. 8 glasses of water); 1 = simple tick. */
+  target: number;
+  unit?: string;
+  createdAt: ISODate;
+  archived?: boolean;
+}
+
+export type WorkoutKind = 'strength' | 'cardio' | 'mobility' | 'class';
+
+export interface Exercise {
+  name: string;
+  sets?: number;
+  reps?: string; // "10" or "8–12"
+  weight?: number; // kg
+  minutes?: number;
+}
+
+export interface Routine {
+  id: ID;
+  name: string;
+  emoji: string;
+  color: PastelColor;
+  kind: WorkoutKind;
+  minutes: number;
+  exercises: Exercise[];
+}
+
+export interface WorkoutLog {
+  id: ID;
+  date: ISODate;
+  routineId?: ID;
+  name: string;
+  kind: WorkoutKind;
+  minutes: number;
+  /** Indexes of exercises completed. */
+  done: number[];
+  effort?: 1 | 2 | 3; // easy / medium / hard
+  notes?: string;
 }

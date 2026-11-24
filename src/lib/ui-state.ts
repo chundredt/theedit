@@ -47,14 +47,15 @@ export function defaultPeriod(today: string, startDay: number, budgets: Record<s
 }
 
 export type Route =
+  | 'today' | 'habits' | 'workouts'
   | 'dashboard' | 'budget' | 'transactions' | 'savings' | 'reports'
   | 'groceries' | 'meals' | 'recipes' | 'shopping' | 'pantry' | 'prices' | 'preferences';
 
-const ROUTES: Route[] = ['dashboard', 'budget', 'transactions', 'savings', 'reports', 'groceries', 'meals', 'recipes', 'shopping', 'pantry', 'prices', 'preferences'];
+const ROUTES: Route[] = ['today', 'habits', 'workouts', 'dashboard', 'budget', 'transactions', 'savings', 'reports', 'groceries', 'meals', 'recipes', 'shopping', 'pantry', 'prices', 'preferences'];
 
 function parseHash(): Route {
   const h = location.hash.replace(/^#\/?/, '').split(/[?/]/)[0] as Route;
-  return ROUTES.includes(h) ? h : 'dashboard';
+  return ROUTES.includes(h) ? h : 'today';
 }
 
 export function useRoute(): Route {
