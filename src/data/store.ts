@@ -11,7 +11,7 @@ import { emptyWeek, buildShoppingList, weeklyNeeds } from '../domain/shopping';
 import { uid } from '../lib/id';
 import { round2, todayISO } from '../lib/format';
 import { groceryCategory } from '../domain/budget';
-import { periodKeyFor } from '../domain/period';
+import { daysLeft, periodKeyFor, shiftPeriod } from '../domain/period';
 
 /** "Today" — overridable with ?today=YYYY-MM-DD for testing and demos. */
 export function getToday(): ISODate {
@@ -438,6 +438,7 @@ export const useStore = create<State>((set, get) => {
         d.settings.name = setup.name || '';
         // Defaults are only suggestions; a fresh start keeps categories but no amounts except groceries.
         const key = periodKeyFor(getToday(), setup.startDay);
+        const upcoming = daysLeft(key, setup.startDay, getToday()) <= 5 ? shiftPeriod(key, 1) : null;
         d.budgets[key] = {
           period: key,
           income: [
@@ -447,6 +448,7 @@ export const useStore = create<State>((set, get) => {
           ].filter((l) => l.amount > 0).map((l) => ({ ...l, id: uid(), amount: round2(l.amount), payDay: setup.startDay })),
           allocations: setup.grocery > 0 ? { groceries: round2(setup.grocery) } : {},
         };
+        if (upcoming) d.budgets[upcoming] = { ...structuredClone(d.budgets[key]), period: upcoming };
       }
       commit(d);
     },

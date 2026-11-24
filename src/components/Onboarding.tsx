@@ -3,7 +3,7 @@ import { Sparkles, PenLine } from 'lucide-react';
 import { Field, MoneyInput } from './ui';
 import { getToday, useStore } from '../data/store';
 import { money, ordinal } from '../lib/format';
-import { periodKeyFor, periodLabel, periodRangeLabel } from '../domain/period';
+import { daysLeft, periodKeyFor, periodLabel, periodRangeLabel, shiftPeriod } from '../domain/period';
 
 /** First run: explore with demo data, or set up your own pay cycle and income. */
 export function Onboarding() {
@@ -16,7 +16,9 @@ export function Onboarding() {
   const [grocery, setGrocery] = useState<number | ''>(2000);
   const [name, setName] = useState('');
   const total = (Number(salary) || 0) + (Number(commission) || 0) + (Number(allowance) || 0);
-  const key = periodKeyFor(getToday(), payDay);
+  // Within 5 days of payday, your first real budget is the one starting on payday.
+  const current = periodKeyFor(getToday(), payDay);
+  const key = daysLeft(current, payDay, getToday()) <= 5 ? shiftPeriod(current, 1) : current;
 
   return (
     <div className="overlay">
@@ -42,7 +44,7 @@ export function Onboarding() {
           ) : (
             <form className="form-grid" onSubmit={(e) => { e.preventDefault(); startFresh({ salary: Number(salary) || 0, commission: Number(commission) || 0, allowance: Number(allowance) || 0, grocery: Number(grocery) || 0, startDay: payDay, name }); }}>
               <Field label="Your first name (optional)" className="full"><input className="input" value={name} onChange={(e) => setName(e.target.value)} /></Field>
-              <Field label="My salary is paid on" className="full" help={payDay > 1 ? `Your budget month runs payday to payday: this one is ${periodRangeLabel(key, payDay)} (“${periodLabel(key)}”).` : 'Your budget follows calendar months.'}>
+              <Field label="My salary is paid on" className="full" help={payDay > 1 ? `Your budget runs payday to payday. First budget: ${periodLabel(key)} (${periodRangeLabel(key, payDay)}).` : 'Your budget follows calendar months.'}>
                 <select className="input" value={payDay} onChange={(e) => setPayDay(Number(e.target.value))} aria-label="Pay day">
                   {Array.from({ length: 28 }, (_, i) => i + 1).map((d) => <option key={d} value={d}>{`the ${ordinal(d)} of every month`}</option>)}
                 </select>
