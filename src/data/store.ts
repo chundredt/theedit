@@ -48,6 +48,7 @@ interface State {
   deleteCategory(id: ID, moveTo?: ID): void;
   setAllocation(key: PeriodKey, categoryId: ID, amount: number): void;
   setIncome(key: PeriodKey, lines: IncomeLine[]): void;
+  markIncome(key: PeriodKey, lineId: ID, received: number | undefined, date?: ISODate): void;
   copyBudget(from: PeriodKey, to: PeriodKey): void;
   // Transactions
   addTransaction(t: Omit<Transaction, 'id' | 'createdAt'>): ID;
@@ -81,7 +82,7 @@ interface State {
   deletePantry(id: ID): void;
   // Whole-data
   loadDemo(): void;
-  startFresh(setup?: { income: number; grocery: number; startDay: number; name?: string }): void;
+  startFresh(setup?: { salary: number; commission: number; allowance: number; grocery: number; startDay: number; name?: string }): void;
   importData(json: string): void;
 }
 
@@ -182,10 +183,23 @@ export const useStore = create<State>((set, get) => {
         ensureBudget(d, key).income = lines.map((l) => ({ ...l, amount: Math.max(0, round2(l.amount || 0)) }));
       });
     },
+    markIncome(key, lineId, received, date) {
+      mutate((d) => {
+        const line = ensureBudget(d, key).income.find((l) => l.id === lineId);
+        if (!line) return;
+        if (received === undefined) {
+          delete line.received;
+          delete line.receivedOn;
+        } else {
+          line.received = Math.max(0, round2(received));
+          line.receivedOn = date || getToday();
+        }
+      });
+    },
     copyBudget(from, to) {
       mutate((d) => {
         const src = resolveBudget(d, from);
-        d.budgets[to] = { period: to, income: src.income.map((i) => ({ ...i, id: uid() })), allocations: { ...src.allocations } };
+        d.budgets[to] = { period: to, income: src.income.map(({ received: _r, receivedOn: _o, ...i }) => ({ ...i, id: uid() })), allocations: { ...src.allocations } };
       });
     },
 
@@ -426,7 +440,11 @@ export const useStore = create<State>((set, get) => {
         const key = periodKeyFor(getToday(), setup.startDay);
         d.budgets[key] = {
           period: key,
-          income: setup.income > 0 ? [{ id: uid(), name: 'Salary (net)', amount: round2(setup.income) }] : [],
+          income: [
+            { name: 'Salary', kind: 'salary' as const, amount: setup.salary },
+            { name: 'Commission', kind: 'commission' as const, amount: setup.commission },
+            { name: 'Allowance', kind: 'allowance' as const, amount: setup.allowance },
+          ].filter((l) => l.amount > 0).map((l) => ({ ...l, id: uid(), amount: round2(l.amount), payDay: setup.startDay })),
           allocations: setup.grocery > 0 ? { groceries: round2(setup.grocery) } : {},
         };
       }

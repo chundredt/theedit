@@ -2,7 +2,7 @@ import type { AppData, ISODate } from './types';
 import type { PeriodSummary } from './budget';
 import type { GroceryOverview } from './grocery';
 import { money } from '../lib/format';
-import { daysBetween } from '../lib/format';
+import { daysBetween, fmtDate } from '../lib/format';
 
 export type InsightTone = 'good' | 'warn' | 'danger' | 'info';
 export interface Insight {
@@ -19,6 +19,16 @@ export function buildInsights(data: AppData, s: PeriodSummary, g: GroceryOvervie
     out.push({ id: 'no-income', tone: 'info', text: 'Add your monthly income to see what you can safely spend.', route: 'budget' });
     return out;
   }
+  if (isCurrent) {
+    for (const i of s.incomeLines.filter((x) => x.late))
+      out.push({ id: `late-${i.line.id}`, tone: 'warn', text: `${i.line.name} (${money(i.line.amount, { cents: false })}) was due on ${fmtDate(i.payDate)}. Mark it as received once it's in, with the actual amount.`, route: 'budget' });
+  }
+  for (const i of s.incomeLines.filter((x) => x.received && x.difference <= -1))
+    out.push({ id: `short-${i.line.id}`, tone: 'warn', text: `${i.line.name} came in ${money(-i.difference, { cents: false })} lower than planned. Safe-to-spend is adjusted — trim a flexible category to match.`, route: 'budget' });
+  for (const i of s.incomeLines.filter((x) => x.received && x.difference >= 1))
+    out.push({ id: `extra-${i.line.id}`, tone: 'good', text: `${i.line.name} was ${money(i.difference, { cents: false })} more than planned. Consider sending the extra to savings.`, route: 'savings' });
+  if (isCurrent && s.daysLeft > 0 && s.daysLeft <= 5 && data.settings.periodStartDay > 1)
+    out.push({ id: 'payday', tone: 'info', text: `Payday is ${s.daysLeft === 1 ? 'tomorrow' : `in ${s.daysLeft} days`} — set up next month's budget.`, route: 'budget' });
   if (s.overAllocated) out.push({ id: 'over-alloc', tone: 'danger', text: `You've planned ${money(-s.unallocated)} more than you earn this month. Trim a category or add income.`, route: 'budget' });
   const overdue = s.bills.filter((b) => b.status === 'overdue');
   if (isCurrent && overdue.length)

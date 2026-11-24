@@ -3,3 +3,4 @@ dist
 dist-single
 *.log
 tests/e2e/screens
+randwise-website.zip

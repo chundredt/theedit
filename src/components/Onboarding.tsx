@@ -1,17 +1,22 @@
 import { useState } from 'react';
 import { Sparkles, PenLine } from 'lucide-react';
 import { Field, MoneyInput } from './ui';
-import { useStore } from '../data/store';
-import { ordinal } from '../lib/format';
+import { getToday, useStore } from '../data/store';
+import { money, ordinal } from '../lib/format';
+import { periodKeyFor, periodLabel, periodRangeLabel } from '../domain/period';
 
-/** First run: explore with demo data, or set up your own month in three fields. */
+/** First run: explore with demo data, or set up your own pay cycle and income. */
 export function Onboarding() {
   const { loadDemo, startFresh } = useStore.getState();
   const [step, setStep] = useState<'choose' | 'setup'>('choose');
-  const [income, setIncome] = useState<number | ''>('');
+  const [payDay, setPayDay] = useState(25);
+  const [salary, setSalary] = useState<number | ''>('');
+  const [commission, setCommission] = useState<number | ''>('');
+  const [allowance, setAllowance] = useState<number | ''>('');
   const [grocery, setGrocery] = useState<number | ''>(2000);
-  const [startDay, setStartDay] = useState(1);
   const [name, setName] = useState('');
+  const total = (Number(salary) || 0) + (Number(commission) || 0) + (Number(allowance) || 0);
+  const key = periodKeyFor(getToday(), payDay);
 
   return (
     <div className="overlay">
@@ -27,7 +32,7 @@ export function Onboarding() {
             <div className="stack">
               <button className="choice" onClick={() => setStep('setup')}>
                 <span className="ic"><PenLine /></span>
-                <span><b>Set up my own budget</b><br /><span className="muted small">Enter your take-home pay and grocery budget. Default South African categories are ready to fill in.</span></span>
+                <span><b>Set up my own budget</b><br /><span className="muted small">Tell us when you're paid and what comes in. Default South African categories are ready to fill in.</span></span>
               </button>
               <button className="choice" onClick={loadDemo}>
                 <span className="ic"><Sparkles /></span>
@@ -35,15 +40,20 @@ export function Onboarding() {
               </button>
             </div>
           ) : (
-            <form className="form-grid" onSubmit={(e) => { e.preventDefault(); startFresh({ income: Number(income) || 0, grocery: Number(grocery) || 0, startDay, name }); }}>
+            <form className="form-grid" onSubmit={(e) => { e.preventDefault(); startFresh({ salary: Number(salary) || 0, commission: Number(commission) || 0, allowance: Number(allowance) || 0, grocery: Number(grocery) || 0, startDay: payDay, name }); }}>
               <Field label="Your first name (optional)" className="full"><input className="input" value={name} onChange={(e) => setName(e.target.value)} /></Field>
-              <Field label="Monthly take-home income" help="After tax, UIF and deductions"><MoneyInput value={income} onChange={setIncome} ariaLabel="Monthly income" /></Field>
-              <Field label="Monthly grocery budget"><MoneyInput value={grocery} onChange={setGrocery} ariaLabel="Grocery budget" /></Field>
-              <Field label="My budget month starts on" className="full" help="Paid on the 25th? Choose 25 so your budget runs payday to payday.">
-                <select className="input" value={startDay} onChange={(e) => setStartDay(Number(e.target.value))}>
-                  {Array.from({ length: 28 }, (_, i) => i + 1).map((d) => <option key={d} value={d}>{d === 1 ? '1st (calendar month)' : `${ordinal(d)} of the month`}</option>)}
+              <Field label="My salary is paid on" className="full" help={payDay > 1 ? `Your budget month runs payday to payday: this one is ${periodRangeLabel(key, payDay)} (“${periodLabel(key)}”).` : 'Your budget follows calendar months.'}>
+                <select className="input" value={payDay} onChange={(e) => setPayDay(Number(e.target.value))} aria-label="Pay day">
+                  {Array.from({ length: 28 }, (_, i) => i + 1).map((d) => <option key={d} value={d}>{`the ${ordinal(d)} of every month`}</option>)}
                 </select>
               </Field>
+              <Field label="Salary (after tax)" help="What lands in your account"><MoneyInput value={salary} onChange={setSalary} ariaLabel="Salary" /></Field>
+              <Field label="Allowance" help="Car, travel, cellphone… (optional)"><MoneyInput value={allowance} onChange={setAllowance} ariaLabel="Allowance" /></Field>
+              <Field label="Commission — a cautious estimate" className="full" help="It changes every month, so budget with a figure you usually beat. Each month you'll enter what actually came in, and everything adjusts.">
+                <MoneyInput value={commission} onChange={setCommission} ariaLabel="Commission estimate" />
+              </Field>
+              <Field label="Monthly grocery budget" className="full"><MoneyInput value={grocery} onChange={setGrocery} ariaLabel="Grocery budget" /></Field>
+              {total > 0 && <p className="full small text-2">Expected income: <b>{money(total)}</b> a month.</p>}
               <div className="full row between mt-8">
                 <button type="button" className="btn ghost" onClick={() => setStep('choose')}>Back</button>
                 <button type="submit" className="btn primary">Start budgeting</button>

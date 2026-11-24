@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import { money, parseAmount, fmtDate, mondayOf } from '../lib/format';
 import { periodKeyFor, periodStart, periodEnd, daysLeft, dueDateInPeriod, periodDays } from './period';
-import { summarize, resolveBudget } from './budget';
+import { summarize, resolveBudget, commissionHistory } from './budget';
 import { groceryOverview } from './grocery';
 import { emptyData, demoData } from '../data/seed';
 import type { AppData, Transaction } from './types';
@@ -51,24 +51,25 @@ describe('budget periods', () => {
     expect(periodStart('2026-02', 1)).toBe('2026-02-01');
     expect(periodEnd('2026-02', 1)).toBe('2026-02-28');
   });
-  it('supports a payday (25th) cycle named after the month it ends in', () => {
-    expect(periodKeyFor('2026-11-24', 25)).toBe('2026-11');
-    expect(periodKeyFor('2026-11-25', 25)).toBe('2026-12');
-    expect(periodStart('2026-12', 25)).toBe('2026-11-25');
-    expect(periodEnd('2026-12', 25)).toBe('2026-12-24');
-    expect(periodDays('2026-03', 25)).toBe(28); // 25 Feb – 24 Mar
+  it('supports a payday (25th) cycle named after the month payday falls in', () => {
+    expect(periodKeyFor('2026-11-24', 25)).toBe('2026-10');
+    expect(periodKeyFor('2026-11-25', 25)).toBe('2026-11');
+    expect(periodStart('2026-11', 25)).toBe('2026-11-25');
+    expect(periodEnd('2026-11', 25)).toBe('2026-12-24');
+    expect(periodDays('2026-02', 25)).toBe(28); // 25 Feb – 24 Mar
+    expect(periodKeyFor('2027-01-10', 25)).toBe('2026-12');
   });
   it('clamps start day 31 in short months', () => {
-    expect(periodStart('2026-03', 31)).toBe('2026-02-28');
-    expect(periodEnd('2026-03', 31)).toBe('2026-03-30');
+    expect(periodStart('2026-02', 31)).toBe('2026-02-28');
+    expect(periodEnd('2026-02', 31)).toBe('2026-03-30');
   });
   it('counts days left including today', () => {
     expect(daysLeft('2026-11', 1, '2026-11-24')).toBe(7);
     expect(daysLeft('2026-10', 1, '2026-11-24')).toBe(0);
   });
   it('places due dates inside payday periods', () => {
-    expect(dueDateInPeriod('2026-12', 25, 1)).toBe('2026-12-01');
-    expect(dueDateInPeriod('2026-12', 25, 28)).toBe('2026-11-28');
+    expect(dueDateInPeriod('2026-11', 25, 1)).toBe('2026-12-01');
+    expect(dueDateInPeriod('2026-11', 25, 28)).toBe('2026-11-28');
   });
 });
 
@@ -112,6 +113,59 @@ describe('budget summary', () => {
     const b = resolveBudget(d, '2026-12');
     expect(b.inherited).toBe(true);
     expect(b.allocations.rent).toBe(7000);
+  });
+});
+
+describe('income: salary, commission and allowance', () => {
+  function payday(): AppData {
+    const d = emptyData(TODAY);
+    d.settings.periodStartDay = 25;
+    d.budgets['2026-11'] = {
+      period: '2026-11',
+      income: [
+        { id: 's', name: 'Salary', kind: 'salary', amount: 20000, payDay: 25, received: 20000 },
+        { id: 'c', name: 'Commission', kind: 'commission', amount: 5000, payDay: 25 },
+        { id: 'a', name: 'Allowance', kind: 'allowance', amount: 1500, payDay: 25, received: 1500 },
+      ],
+      allocations: { rent: 8000, groceries: 2000 },
+    };
+    return d;
+  }
+  it('counts expected commission until it is received, then the actual amount', () => {
+    const d = payday();
+    let s = summarize(d, '2026-11', '2026-11-26');
+    expect(s.incomeExpected).toBe(26500);
+    expect(s.incomeReceived).toBe(21500);
+    expect(s.incomePending).toBe(5000);
+    expect(s.income).toBe(26500);
+    expect(s.incomeLines.find((l) => l.line.id === 'c')!.late).toBe(true);
+    d.budgets['2026-11'].income[1].received = 3800;
+    s = summarize(d, '2026-11', '2026-11-26');
+    expect(s.income).toBe(25300);
+    expect(s.incomePending).toBe(0);
+    expect(s.incomeLines.find((l) => l.line.id === 'c')!.difference).toBe(-1200);
+    // The plan is still judged against expected income; spending money uses the actual.
+    expect(s.unallocated).toBe(26500 - 10000);
+    expect(s.safeToSpend).toBe(25300 - 8000);
+  });
+  it('next month copies expected income but not what was received', () => {
+    const d = payday();
+    const next = resolveBudget(d, '2026-12');
+    expect(next.income.map((l) => l.received)).toEqual([undefined, undefined, undefined]);
+    expect(next.income.map((l) => l.amount)).toEqual([20000, 5000, 1500]);
+  });
+  it('averages actual commission over recent months', () => {
+    const d = payday();
+    d.budgets['2026-11'].income[1].received = 4000;
+    d.budgets['2026-10'] = { period: '2026-10', income: [{ id: 'c2', name: 'Commission', kind: 'commission', amount: 5000, received: 6000 }], allocations: {} };
+    expect(commissionHistory(d, '2026-12')).toEqual({ average: 5000, months: 2, last: 4000 });
+  });
+  it('payday period: 25 Nov – 24 Dec has 30 days and pay lands on the first day', () => {
+    const d = payday();
+    const s = summarize(d, '2026-11', '2026-11-25');
+    expect(s.totalDays).toBe(30);
+    expect(s.incomeLines[0].payDate).toBe('2026-11-25');
+    expect(groceryOverview(d, '2026-11', '2026-11-25').weekly).toBeCloseTo(466.67, 2);
   });
 });
 
@@ -236,9 +290,10 @@ describe('catalogue text parser', () => {
 describe('demo data', () => {
   it('builds a consistent three-month demo', () => {
     const d = demoData(TODAY);
-    expect(Object.keys(d.budgets)).toEqual(['2026-09', '2026-10', '2026-11']);
-    const s = summarize(d, '2026-11', TODAY);
-    expect(s.income).toBe(30000);
+    expect(Object.keys(d.budgets)).toEqual(['2026-08', '2026-09', '2026-10']);
+    const s = summarize(d, '2026-10', TODAY);
+    expect(s.income).toBe(24500 + 4380 + 1500);
+    expect(s.daysLeft).toBe(1);
     expect(s.spent).toBeGreaterThan(10000);
     expect(d.transactions.every((t) => t.date <= TODAY)).toBe(true);
     expect(Object.values(d.mealPlans)[0].days.some((x) => x.dinner)).toBe(true);

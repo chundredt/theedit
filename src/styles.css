@@ -406,3 +406,5 @@ table.t tr.best td { background: var(--good-soft); }
 .g-6 { grid-template-columns: repeat(6, minmax(0, 1fr)); }
 @media (max-width: 1280px) { .g-6 { grid-template-columns: repeat(3, minmax(0, 1fr)); } }
 @media (max-width: 520px) { .g-6 { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 10px; } }
+.income-line { padding: 12px; border: 1px solid var(--border); border-radius: 12px; background: var(--surface-2); }
+.income-line .input { background: var(--surface); }

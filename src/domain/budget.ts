@@ -1,4 +1,4 @@
-import type { AppData, Budget, Category, CategoryGroup, ID, ISODate, PeriodKey, Transaction } from './types';
+import type { AppData, Budget, Category, CategoryGroup, ID, IncomeLine, ISODate, PeriodKey, Transaction } from './types';
 import { daysLeft, dueDateInPeriod, inPeriod, periodDays } from './period';
 import { daysBetween, round2 } from '../lib/format';
 
@@ -16,7 +16,8 @@ export function resolveBudget(data: AppData, key: PeriodKey): Budget & { inherit
   const src = earlier.length ? data.budgets[earlier[earlier.length - 1]] : later.length ? data.budgets[later[0]] : undefined;
   return {
     period: key,
-    income: src ? src.income.map((i) => ({ ...i })) : [],
+    // A new month starts with the same expected income, not yet received.
+    income: src ? src.income.map(({ received: _r, receivedOn: _o, ...i }) => ({ ...i })) : [],
     allocations: src ? { ...src.allocations } : {},
     inherited: true,
   };
@@ -63,9 +64,26 @@ export interface Bill {
   daysUntil: number;
 }
 
+export interface IncomeStatus {
+  line: IncomeLine;
+  payDate?: ISODate;
+  received: boolean;
+  /** Actual if received, otherwise expected. */
+  value: number;
+  /** received − expected (only once received). */
+  difference: number;
+  late: boolean;
+}
+
 export interface PeriodSummary {
   key: PeriodKey;
+  /** Income used for every calculation: actual where received, expected otherwise. */
   income: number;
+  incomeExpected: number;
+  incomeReceived: number;
+  /** Expected income that hasn't been marked received yet. */
+  incomePending: number;
+  incomeLines: IncomeStatus[];
   planned: Record<CategoryGroup, number>;
   plannedTotal: number;
   unallocated: number;
@@ -98,7 +116,21 @@ export function summarize(data: AppData, key: PeriodKey, today: ISODate): Period
   const budget = resolveBudget(data, key);
   const txs = transactionsIn(data, key);
   const spentMap = sumBy(txs);
-  const income = round2(budget.income.reduce((s, i) => s + (i.amount || 0), 0));
+  const incomeLines: IncomeStatus[] = budget.income.map((line) => {
+    const received = line.received !== undefined && line.received !== null;
+    const payDate = line.payDay ? dueDateInPeriod(key, sd, line.payDay) : undefined;
+    return {
+      line,
+      payDate,
+      received,
+      value: received ? line.received! : line.amount || 0,
+      difference: received ? round2(line.received! - (line.amount || 0)) : 0,
+      late: !received && !!payDate && payDate < today,
+    };
+  });
+  const income = round2(incomeLines.reduce((s, i) => s + i.value, 0));
+  const incomeExpected = round2(budget.income.reduce((s, i) => s + (i.amount || 0), 0));
+  const incomeReceived = round2(incomeLines.filter((i) => i.received).reduce((s, i) => s + i.value, 0));
 
   const planned: Record<CategoryGroup, number> = { fixed: 0, variable: 0, savings: 0 };
   const actual: Record<CategoryGroup, number> = { fixed: 0, variable: 0, savings: 0 };
@@ -151,12 +183,16 @@ export function summarize(data: AppData, key: PeriodKey, today: ISODate): Period
   return {
     key,
     income,
+    incomeExpected,
+    incomeReceived,
+    incomePending: round2(income - incomeReceived),
+    incomeLines,
     planned,
     plannedTotal,
-    unallocated: round2(income - plannedTotal),
-    overAllocated: plannedTotal > income + 0.004,
-    allocatedPct: income > 0 ? (plannedTotal / income) * 100 : 0,
-    discretionary: round2(income - planned.fixed - planned.savings),
+    unallocated: round2(incomeExpected - plannedTotal),
+    overAllocated: plannedTotal > incomeExpected + 0.004,
+    allocatedPct: incomeExpected > 0 ? (plannedTotal / incomeExpected) * 100 : 0,
+    discretionary: round2(incomeExpected - planned.fixed - planned.savings),
     actual,
     spent,
     saved,
@@ -200,4 +236,18 @@ export function dailySpend(data: AppData, key: PeriodKey, start: ISODate, days: 
     out.push({ date: iso, day: i + 1, amount: round2(amt), cumulative: round2(cum) });
   }
   return out;
+}
+
+/** Average commission actually received over the last `n` months before `key` (for a realistic estimate). */
+export function commissionHistory(data: AppData, key: PeriodKey, n = 3): { average: number; months: number; last?: number } {
+  const keys = Object.keys(data.budgets).filter((k) => k < key).sort().slice(-n);
+  const vals = keys
+    .map((k) => data.budgets[k].income.filter((l) => l.kind === 'commission' && l.received !== undefined).reduce((s, l) => s + (l.received || 0), 0))
+    .filter((_, i) => data.budgets[keys[i]].income.some((l) => l.kind === 'commission' && l.received !== undefined));
+  if (!vals.length) return { average: 0, months: 0 };
+  return { average: round2(vals.reduce((a, b) => a + b, 0) / vals.length), months: vals.length, last: vals[vals.length - 1] };
+}
+
+export function incomeKindOf(line: IncomeLine) {
+  return line.kind || 'other';
 }

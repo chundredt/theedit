@@ -39,7 +39,9 @@ await step('first run shows onboarding and can set up a fresh budget', async () 
   await go('dashboard');
   await page.getByText('Welcome to RandWise').waitFor();
   await page.getByText('Set up my own budget').click();
-  await page.getByLabel('Monthly income').fill('25 000');
+  assert((await page.getByLabel('Pay day').inputValue()) === '25', 'payday should default to the 25th');
+  await page.getByLabel('Salary').fill('20 000');
+  await page.getByLabel('Allowance').fill('5000');
   await page.getByLabel('Grocery budget').fill('2000');
   await page.getByRole('button', { name: 'Start budgeting' }).click();
   await page.getByTestId('safe-to-spend').waitFor();
@@ -50,7 +52,8 @@ await step('first run shows onboarding and can set up a fresh budget', async () 
 await step('grocery page splits R2,000 into weekly/daily allowances', async () => {
   await go('groceries');
   const weekly = money(await page.getByTestId('grocery-weekly').textContent());
-  assert(Math.abs(weekly - 466.67) < 0.01, `weekly should be 466.67, got ${weekly}`);
+  // Payday cycle 25 Oct – 24 Nov = 31 days → 2000 × 7 ÷ 31
+  assert(Math.abs(weekly - 451.61) < 0.01, `weekly should be 451.61, got ${weekly}`);
 });
 
 await step('adding an expense updates grocery remaining and persists after reload', async () => {
@@ -82,6 +85,27 @@ await step('budget edits flow to the dashboard and over-allocation is flagged', 
   const v = money(await page.getByTestId('safe-to-spend').textContent());
   // income 25000 − spent 612.40 − unpaid rent 8500 − grocery? (variable isn't reserved) = 15887.60
   assert(Math.abs(v - 15887.6) < 0.001, `safe to spend should be 15887.60, got ${v}`);
+});
+
+await step('commission: add an estimate, mark it received lower, and the money adjusts', async () => {
+  await go('budget');
+  await page.getByRole('button', { name: 'Commission', exact: true }).click();
+  const est = page.getByLabel('Commission expected');
+  await est.fill('4000');
+  await est.press('Enter');
+  await page.waitForTimeout(100);
+  let exp = money(await page.getByTestId('income-expected').textContent());
+  assert(exp === 29000, `expected income should be 29000, got ${exp}`);
+  await page.getByTestId('income-commission').getByRole('button', { name: 'Mark as received' }).click();
+  await page.getByLabel('Commission received').fill('3200');
+  await page.getByRole('button', { name: 'Confirm amount received' }).click();
+  await page.getByText('less than expected').waitFor();
+  const actual = money(await page.getByTestId('income-total').textContent());
+  assert(actual === 28200, `actual income should be 28200, got ${actual}`);
+  await go('dashboard');
+  await page.getByText('came in R800 lower than planned').waitFor();
+  const v = money(await page.getByTestId('safe-to-spend').textContent());
+  assert(Math.abs(v - (15887.6 + 3200)) < 0.001, `safe to spend should include actual commission, got ${v}`);
 });
 
 await step('transactions can be edited and deleted (with undo)', async () => {

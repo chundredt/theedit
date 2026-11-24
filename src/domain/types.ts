@@ -34,10 +34,25 @@ export interface Category {
   archived?: boolean;
 }
 
+export type IncomeKind = 'salary' | 'commission' | 'allowance' | 'other';
+export const INCOME_KINDS: { value: IncomeKind; label: string; hint: string }[] = [
+  { value: 'salary', label: 'Salary', hint: 'Fixed take-home pay' },
+  { value: 'commission', label: 'Commission', hint: 'Varies month to month' },
+  { value: 'allowance', label: 'Allowance', hint: 'Car, travel, cellphone…' },
+  { value: 'other', label: 'Other', hint: 'Side income, rental, refunds' },
+];
+
 export interface IncomeLine {
   id: ID;
   name: string;
+  /** Expected (planned) amount after tax. */
   amount: number;
+  kind?: IncomeKind;
+  /** Day of the month it is paid into your account. */
+  payDay?: number;
+  /** Actual amount that arrived; undefined until marked received. */
+  received?: number;
+  receivedOn?: ISODate;
 }
 
 export interface Budget {

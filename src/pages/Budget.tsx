@@ -2,13 +2,13 @@ import { useMemo, useState } from 'react';
 import { Copy, Pencil, Plus, Trash2 } from 'lucide-react';
 import { Banner, Card, Confirm, Field, Modal, MoneyInput, PageHeader, PeriodNav } from '../components/ui';
 import { BillList } from '../components/BudgetBits';
+import { IncomeCard } from '../components/IncomeCard';
 import { getToday, useData, useStore } from '../data/store';
 import { usePeriod } from '../lib/ui-state';
 import { resolveBudget, summarize, type CategoryRow } from '../domain/budget';
-import { periodLabel, shiftPeriod } from '../domain/period';
-import { PAYMENT_METHODS, type Category, type CategoryGroup, type IncomeLine, type PaymentMethod } from '../domain/types';
+import { periodKeyFor, periodLabel, shiftPeriod } from '../domain/period';
+import { PAYMENT_METHODS, type Category, type CategoryGroup, type PaymentMethod } from '../domain/types';
 import { fmtPct, money, ordinal } from '../lib/format';
-import { uid } from '../lib/id';
 import { PALETTE } from '../data/seed';
 
 const GROUPS: { id: CategoryGroup; title: string; blurb: string; color: string }[] = [
@@ -21,7 +21,7 @@ export function BudgetPage() {
   const data = useData();
   const today = getToday();
   const [period, setPeriod] = usePeriod();
-  const { setIncome, setAllocation, copyBudget } = useStore.getState();
+  const { setAllocation, copyBudget } = useStore.getState();
   const s = useMemo(() => summarize(data, period, today), [data, period, today]);
   const budget = resolveBudget(data, period);
   const [editing, setEditing] = useState<Category | 'new-fixed' | 'new-variable' | 'new-savings' | null>(null);
@@ -29,7 +29,6 @@ export function BudgetPage() {
   const prev = shiftPeriod(period, -1);
   const hasPrev = !!data.budgets[prev];
 
-  const updateIncome = (lines: IncomeLine[]) => setIncome(period, lines);
 
   return (
     <>
@@ -38,6 +37,11 @@ export function BudgetPage() {
         {hasPrev && <button className="btn" onClick={() => copyBudget(prev, period)}><Copy /> Copy {periodLabel(prev, true)}</button>}
       </PageHeader>
 
+      {period === periodKeyFor(today, data.settings.periodStartDay) && s.daysLeft > 0 && s.daysLeft <= 5 && (
+        <div style={{ marginBottom: 16 }}>
+          <Banner tone="sage">Payday is {s.daysLeft === 1 ? 'tomorrow' : `in ${s.daysLeft} days`}. <button className="btn sm" style={{ marginLeft: 8 }} onClick={() => setPeriod(shiftPeriod(period, 1))}>Plan {periodLabel(shiftPeriod(period, 1))}</button></Banner>
+        </div>
+      )}
       {budget.inherited && (
         <div className="mb-16" style={{ marginBottom: 16 }}>
           <Banner tone="sage">{Object.keys(data.budgets).length ? <>This month isn't set up yet, so it's using your most recent budget. Any change you make saves it for <b>{periodLabel(period)}</b>.</> : <>Start by adding your income, then set an amount for each category.</>}</Banner>
@@ -45,30 +49,11 @@ export function BudgetPage() {
       )}
 
       <div className="grid g-main">
-        <Card title="Income" action={<button className="btn sm" onClick={() => updateIncome([...budget.income, { id: uid(), name: 'Other income', amount: 0 }])}><Plus /> Add income</button>}>
-          {budget.income.length === 0 && <p className="muted small" style={{ marginBottom: 12 }}>Add your take-home pay (after tax and deductions).</p>}
-          {budget.income.map((line, i) => (
-            <div className="row" key={line.id} style={{ marginBottom: 10 }}>
-              <input className="input grow" aria-label="Income name" defaultValue={line.name} onBlur={(e) => {
-                if (e.target.value.trim() === line.name) return;
-                const next = budget.income.map((l, j) => (j === i ? { ...l, name: e.target.value.trim() || 'Income' } : l));
-                updateIncome(next);
-              }} />
-              <MoneyInput className="" value={line.amount} ariaLabel={`${line.name} amount`} onCommit={(v) => v !== line.amount && updateIncome(budget.income.map((l, j) => (j === i ? { ...l, amount: v } : l)))} />
-              <button className="btn ghost icon" aria-label={`Remove ${line.name}`} onClick={() => updateIncome(budget.income.filter((_, j) => j !== i))}><Trash2 /></button>
-            </div>
-          ))}
-          {budget.income.length === 0 && (
-            <button className="btn primary" onClick={() => updateIncome([{ id: uid(), name: 'Salary (net)', amount: 0 }])}><Plus /> Add salary</button>
-          )}
-          <div className="row between" style={{ borderTop: '1px solid var(--border)', paddingTop: 12, marginTop: 4 }}>
-            <b>Total monthly income</b><b className="num" data-testid="income-total">{money(s.income)}</b>
-          </div>
-        </Card>
+        <IncomeCard period={period} />
 
         <Card title="Allocation">
           <div className="stackbar" aria-label="How income is allocated">
-            {s.income > 0 && GROUPS.map((g) => <span key={g.id} style={{ width: `${Math.min(100, (s.planned[g.id] / Math.max(s.income, s.plannedTotal)) * 100)}%`, background: g.color }} />)}
+            {s.incomeExpected > 0 && GROUPS.map((g) => <span key={g.id} style={{ width: `${Math.min(100, (s.planned[g.id] / Math.max(s.incomeExpected, s.plannedTotal)) * 100)}%`, background: g.color }} />)}
           </div>
           <div className="legend mt-8">
             {GROUPS.map((g) => <span key={g.id}><i className="stat-dot" style={{ background: g.color }} />{g.title.split(' ')[0]} {money(s.planned[g.id], { cents: false })}</span>)}
@@ -83,8 +68,8 @@ export function BudgetPage() {
               <b className={`num ${s.overAllocated ? 'danger' : s.unallocated === 0 ? 'good' : ''}`} data-testid="unallocated">{money(Math.abs(s.unallocated))}</b>
             </div>
           </div>
-          {s.overAllocated && <div className="mt-12"><Banner tone="danger">You've planned more than you earn. Reduce some categories by {money(-s.unallocated)}.</Banner></div>}
-          {!s.overAllocated && s.income > 0 && s.unallocated === 0 && <div className="mt-12"><Banner tone="good">Every rand has a job. Nice.</Banner></div>}
+          {s.overAllocated && <div className="mt-12"><Banner tone="danger">You've planned more than you expect to earn. Reduce some categories by {money(-s.unallocated)}.</Banner></div>}
+          {!s.overAllocated && s.incomeExpected > 0 && s.unallocated === 0 && <div className="mt-12"><Banner tone="good">Every rand has a job. Nice.</Banner></div>}
         </Card>
       </div>
 

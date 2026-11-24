@@ -57,6 +57,7 @@ export function Dashboard() {
           {isCurrent && s.daysLeft > 0 && (
             <div className="muted">≈ <b style={{ color: '#fff' }}>{money(s.perDay)}</b> a day for {s.daysLeft} days, after unpaid bills and planned savings</div>
           )}
+          {s.incomePending > 0 && <div className="muted small mt-8">Includes {money(s.incomePending, { cents: false })} income you haven't marked as received yet.</div>}
           <div className="mt-16"><Progress value={s.spent + s.saved} max={s.income} size="thin" /></div>
           <div className="row between xs mt-8 muted"><span>{Math.round(spentPct)}% of income used</span><span>{money(s.income, { cents: false })} income</span></div>
           <div className="hero-meta">
@@ -86,7 +87,7 @@ export function Dashboard() {
 
       <div className="grid g-6 mt-16">
         {[
-          { label: 'Income', v: s.income, hint: `${s.inherited ? 'Copied from last month' : 'This month'}`, dot: 'var(--sage)' },
+          { label: 'Income', v: s.income, hint: s.income === 0 ? 'Not set up yet' : s.incomePending > 0 ? `${money(s.incomeReceived, { cents: false })} in · ${money(s.incomePending, { cents: false })} to come` : 'All received', dot: 'var(--sage)' },
           { label: 'Fixed expenses', v: s.planned.fixed, hint: `${money(s.actual.fixed, { cents: false })} paid`, dot: 'var(--series-2)' },
           { label: 'Variable expenses', v: s.planned.variable, hint: `${money(s.actual.variable, { cents: false })} spent`, dot: 'var(--series-3)' },
           { label: 'Savings allocated', v: s.planned.savings, hint: `${money(s.saved, { cents: false })} saved`, dot: 'var(--series-6)' },

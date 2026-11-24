@@ -267,7 +267,7 @@ function rng(seed: number) {
 /** Three months of realistic demo data ending today. */
 export function demoData(today: string): AppData {
   const data = emptyData(today);
-  data.settings = { ...data.settings, onboarded: true };
+  data.settings = { ...data.settings, onboarded: true, periodStartDay: 25 };
   const rand = rng(42);
   const sd = data.settings.periodStartDay;
   const current = periodKeyFor(today, sd);
@@ -290,8 +290,9 @@ export function demoData(today: string): AppData {
     data.budgets[key] = {
       period: key,
       income: [
-        { id: `inc-salary-${key}`, name: 'Salary (net)', amount: 28500 },
-        { id: `inc-side-${key}`, name: 'Freelance design', amount: back === 1 ? 2200 : 1500 },
+        { id: `inc-salary-${key}`, name: 'Salary', kind: 'salary', amount: 24500, payDay: 25, received: 24500, receivedOn: periodStart(key, 25) },
+        { id: `inc-comm-${key}`, name: 'Commission', kind: 'commission', amount: 4000, payDay: 25, received: [3150, 5120, 4380][2 - back], receivedOn: periodStart(key, 25) },
+        { id: `inc-allow-${key}`, name: 'Car allowance', kind: 'allowance', amount: 1500, payDay: 25, received: 1500, receivedOn: periodStart(key, 25) },
       ],
       allocations: { ...allocations, ...(back === 2 ? { eatout: 800 } : {}) },
     };

@@ -56,7 +56,7 @@ export function SettingsPage() {
             <Field label="People you cook for" help="Default servings in the meal planner">
               <select className="input" value={s.householdSize} onChange={(e) => updateSettings({ householdSize: Number(e.target.value) })}>{[1, 2, 3, 4, 5, 6].map((n) => <option key={n}>{n}</option>)}</select>
             </Field>
-            <Field label="Budget month starts on" className="full" help={s.periodStartDay > 1 ? `Periods run from the ${ordinal(s.periodStartDay)} and are named after the month they end in.` : 'Calendar months.'}>
+            <Field label="Salary paid on (budget month starts)" className="full" help={s.periodStartDay > 1 ? `Each budget month runs from payday on the ${ordinal(s.periodStartDay)} and is named after the month you're paid in.` : 'Calendar months.'}>
               <select className="input" value={s.periodStartDay} onChange={(e) => updateSettings({ periodStartDay: Number(e.target.value) })}>
                 {Array.from({ length: 28 }, (_, i) => i + 1).map((d) => <option key={d} value={d}>{d === 1 ? '1st (calendar month)' : `${ordinal(d)} (payday cycle)`}</option>)}
               </select>
