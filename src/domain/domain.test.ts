@@ -356,3 +356,43 @@ describe('matching slip items', () => {
     expect(rows[1].productId).toBe('baked-beans');
   });
 });
+
+import { parseIngredientText, pickNutrition, guessProduct, nutritionFromSimilar } from './ingredients';
+
+describe('typing an ingredient list', () => {
+  const products = emptyData(TODAY).products;
+  it('turns everyday quantities into grams and matches products', () => {
+    const rows = parseIngredientText('500g chicken breast fillets\n2 onions, 1 tin chopped tomatoes\n1 cup rice\n2 tbsp sunflower oil\n½ tsp salt\n1.5 kg potatoes\n3 cloves garlic\nPeri-peri sauce to taste', products);
+    const by = (id: string) => rows.find((r) => r.productId === id);
+    expect(by('chicken-breast')?.grams).toBe(500);
+    expect(by('onions')?.grams).toBe(300);
+    expect(by('chopped-tomatoes')?.grams).toBe(410);
+    expect(by('rice')?.grams).toBe(190);
+    expect(by('oil')?.grams).toBe(30);
+    expect(by('salt')?.grams).toBe(3);
+    expect(by('potatoes')?.grams).toBe(1500);
+    expect(by('garlic')?.grams).toBe(15);
+    const peri = rows.find((r) => /peri/i.test(r.name))!;
+    expect(peri.productId).toBeUndefined();
+    expect(peri.grams).toBe(2);
+  });
+  it('guesses aisle and diet tags for new ingredients', () => {
+    expect(guessProduct('Lamb chops')).toMatchObject({ category: 'Meat & fish', tags: ['meat'] });
+    expect(guessProduct('Parmesan')).toMatchObject({ category: 'Dairy & eggs', tags: ['dairy'] });
+    expect(guessProduct('Ground cumin').category).toBe('Spices & sauces');
+  });
+  it('estimates nutrition from a similar ingredient you already have', () => {
+    expect(nutritionFromSimilar('Chicken breast skinless', products)?.protein).toBe(23);
+    expect(nutritionFromSimilar('Dragonfruit', products)).toBeUndefined();
+  });
+  it('picks median nutrition from database results, preferring SA products', () => {
+    const n = pickNutrition([
+      { nutriments: { 'energy-kcal_100g': 100, proteins_100g: 1, carbohydrates_100g: 20, fat_100g: 1 }, countries_tags: ['en:south-africa'] },
+      { nutriments: { 'energy-kcal_100g': 120, proteins_100g: 2, carbohydrates_100g: 22, fat_100g: 2 }, countries_tags: ['en:south-africa'] },
+      { nutriments: { 'energy-kcal_100g': 110, proteins_100g: 1.5, carbohydrates_100g: 21, fat_100g: 1.5 }, countries_tags: ['en:south-africa'] },
+      { nutriments: { 'energy-kcal_100g': 400, proteins_100g: 9, carbohydrates_100g: 50, fat_100g: 20 }, countries_tags: ['en:france'] },
+      { nutriments: { proteins_100g: 3 } },
+    ]);
+    expect(n).toEqual({ kcal: 110, protein: 1.5, carbs: 21, fat: 1.5 });
+  });
+});

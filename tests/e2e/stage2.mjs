@@ -58,18 +58,16 @@ export async function stage2({ page, go, step, assert, money, SHOTS }) {
     await page.screenshot({ path: `${SHOTS}prices-compare.png`, fullPage: true });
   });
 
-  await step('custom recipe calculates nutrition and appears in the list', async () => {
+  await step('custom recipe: paste the ingredient list, nutrition is calculated', async () => {
     await go('recipes');
     await page.getByRole('button', { name: 'New recipe' }).click();
     await page.getByPlaceholder('e.g. Chicken & chickpea bowl').fill('Tuna egg protein bowl');
-    await page.locator('.modal select[aria-label="Product"]').first().selectOption('tuna');
-    await page.locator('.modal input[aria-label="Grams"]').first().fill('170');
-    await page.getByRole('button', { name: 'Ingredient', exact: true }).click();
-    await page.locator('.modal select[aria-label="Product"]').nth(1).selectOption('eggs');
-    await page.locator('.modal input[aria-label="Grams"]').nth(1).fill('100');
-    await page.locator('.modal input[type=number]').first().fill('1');
+    await page.getByLabel('Servings').fill('1');
+    await page.getByLabel('Type or paste ingredients').fill('170g tuna chunks, 100g eggs');
+    await page.getByRole('button', { name: 'Add these' }).click();
+    assert((await page.locator('.modal input[aria-label="Ingredient"]').count()) === 2, 'two ingredient rows expected');
     const protein = await page.locator('.modal .macros div').nth(1).textContent();
-    // 170 g tuna × 26/100 + 100 g egg × 12.6/100 = 44.2 + 12.6 = 56.8 g
+    // 170 g tuna × 26/100 + 100 g egg × 12.6/100 = 56.8 g
     assert(protein.startsWith('57g'), `protein should be ~57g, got ${protein}`);
     await page.getByRole('button', { name: 'Save recipe' }).click();
     await page.getByText('Tuna egg protein bowl').waitFor();
@@ -245,17 +243,33 @@ export async function stage2({ page, go, step, assert, money, SHOTS }) {
     await page.keyboard.press('Escape');
   });
 
-  await step('recipe form: add an ingredient that is not in the list', async () => {
+  await step('recipe form: search ingredients and add a new one in one tap', async () => {
     await go('recipes');
     await page.getByRole('button', { name: 'New recipe' }).click();
-    const pick = page.locator('.modal select[aria-label="Product"]').first();
-    assert((await pick.locator('option', { hasText: 'Boerewors' }).count()) === 1, 'extra ingredients should be in the list');
-    await pick.selectOption('__new');
-    await page.getByPlaceholder('e.g. Greek yoghurt').fill('Peri-peri sauce');
-    await page.locator('.modal').last().getByRole('button', { name: 'Save', exact: true }).click();
-    const chosen = await pick.evaluate((el) => el.options[el.selectedIndex].text);
-    assert(chosen === 'Peri-peri sauce', `new ingredient should be selected, got "${chosen}"`);
+    const pick = page.locator('.modal input[aria-label="Ingredient"]').first();
+    await pick.fill('boere');
+    await page.locator('.ing-menu').getByRole('button', { name: /Boerewors/ }).waitFor();
+    await pick.fill('Peri-peri sauce');
+    await page.getByRole('button', { name: 'Add “Peri-peri sauce”' }).click();
+    assert((await pick.inputValue()) === 'Peri-peri sauce', 'new ingredient should be selected');
     await page.keyboard.press('Escape');
+    await go('prices');
+    await page.getByRole('tab', { name: 'Products & stores' }).click();
+    await page.getByText('Peri-peri sauce').first().waitFor();
+  });
+
+  await step('page still scrolls after creating a recipe from inside the meal planner', async () => {
+    await go('meals');
+    await page.locator('.plan-grid .slot').first().click();
+    await page.getByRole('button', { name: 'New recipe' }).click();
+    await page.getByPlaceholder('e.g. Chicken & chickpea bowl').fill('Quick oats');
+    await page.getByLabel('Type or paste ingredients').fill('60g oats, 250ml milk');
+    await page.getByRole('button', { name: 'Add these' }).click();
+    await page.getByRole('button', { name: 'Save recipe' }).click();
+    await page.waitForTimeout(300);
+    assert((await page.locator('.modal').count()) === 0, 'all windows should be closed');
+    const overflow = await page.evaluate(() => document.body.style.overflow);
+    assert(overflow === '', `page should scroll again, body overflow is "${overflow}"`);
   });
 
   await step('prices learn from a finished shop', async () => {

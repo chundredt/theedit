@@ -143,6 +143,8 @@ export interface Product {
   /** For countable items (eggs, onions): grams per piece and its label. */
   pieceGrams?: number;
   pieceLabel?: string;
+  /** Where the nutrition came from: estimated from a similar food, the food database, or typed by you. */
+  nutritionSource?: 'similar' | 'database' | 'you';
 }
 
 export type PriceSource = 'manual' | 'flyer' | 'catalogue' | 'sample' | 'receipt';

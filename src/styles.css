@@ -607,3 +607,12 @@ h2 { font-weight: 800; font-size: 18px; letter-spacing: -0.01em; }
 @media (max-width: 520px) { .challenge-main { font-size: 21px; } .challenge-card::after { width: 120px; height: 120px; right: -50px; } }
 .receipt-row { display: flex; align-items: flex-end; gap: 8px; padding: 10px 0; border-bottom: 1px solid var(--border); }
 .receipt-row > input[type=checkbox] { width: 20px; height: 20px; margin-bottom: 11px; accent-color: var(--ink); flex-shrink: 0; }
+
+/* Ingredient search */
+.ing-picker { position: relative; flex: 1; min-width: 0; }
+.ing-menu { position: absolute; z-index: 5; top: calc(100% + 4px); left: 0; right: 0; background: var(--surface); border: 1px solid var(--border); border-radius: 14px; box-shadow: var(--shadow-lg); padding: 4px; max-height: 260px; overflow: auto; }
+.ing-menu button { display: flex; justify-content: space-between; align-items: center; gap: 8px; width: 100%; border: 0; background: none; padding: 10px 12px; border-radius: 10px; text-align: left; cursor: pointer; color: var(--text); font-size: 15px; }
+.ing-menu button:hover { background: var(--surface-2); }
+.ing-menu .ing-add { font-weight: 700; justify-content: flex-start; color: var(--sage-strong); }
+.quick-ings { display: flex; flex-direction: column; gap: 8px; padding: 12px; border-radius: 16px; background: var(--sage-tint); margin-bottom: 4px; }
+.quick-ings .btn { align-self: flex-start; }

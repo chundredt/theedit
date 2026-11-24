@@ -64,7 +64,7 @@ export function RecipesPage() {
           ))}
         </div>
       )}
-      {open && <RecipeDetail recipe={open} onClose={() => setOpen(null)} onEdit={() => { setEditing(open); setOpen(null); }} onPlan={() => { location.hash = 'meals'; }} />}
+      {open && <RecipeDetail recipe={open} onClose={() => setOpen(null)} onEdit={() => { setEditing(open); setOpen(null); }} onCopy={() => { setEditing({ ...open, id: '', name: `${open.name} (copy)`, custom: true }); setOpen(null); }} onPlan={() => { location.hash = 'meals'; }} />}
       {editing && <RecipeForm initial={editing === 'new' ? undefined : editing} onClose={() => setEditing(null)} />}
     </>
   );

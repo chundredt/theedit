@@ -1,7 +1,9 @@
 import { useMemo, useState } from 'react';
-import { Clock, Pencil, Plus, Trash2, Users, ImagePlus, X } from 'lucide-react';
+import { Clock, Pencil, Plus, Trash2, Users, ImagePlus, X, Copy } from 'lucide-react';
 import { Banner, Field, Modal, NumberInput } from './ui';
-import { NEW_PRODUCT, ProductForm, ProductSelect } from './FoodForms';
+import { ProductForm } from './FoodForms';
+import { IngredientPicker, useQuickProduct } from './IngredientPicker';
+import { parseIngredientText } from '../domain/ingredients';
 import { getToday, useData, useStore } from '../data/store';
 import { dietConflicts, recipeStats, type RecipeStats } from '../domain/recipes';
 import { MEAL_TYPES, type Ingredient, type MealType, type Recipe } from '../domain/types';
@@ -52,7 +54,7 @@ export function RecipeCard({ recipe, stats, onClick, extra }: { recipe: Recipe; 
   );
 }
 
-export function RecipeDetail({ recipe, onClose, onEdit, onPlan }: { recipe: Recipe; onClose: () => void; onEdit: () => void; onPlan?: () => void }) {
+export function RecipeDetail({ recipe, onClose, onEdit, onPlan, onCopy }: { recipe: Recipe; onClose: () => void; onEdit: () => void; onPlan?: () => void; onCopy?: () => void }) {
   const data = useData();
   const today = getToday();
   const stats = recipeStats(recipe, data, today);
@@ -62,6 +64,7 @@ export function RecipeDetail({ recipe, onClose, onEdit, onPlan }: { recipe: Reci
   return (
     <Modal wide title={recipe.name} onClose={onClose} footer={<>
       <button className="btn danger left" onClick={() => { deleteRecipe(recipe.id); onClose(); }}><Trash2 /> Delete</button>
+      {onCopy && <button className="btn" onClick={onCopy}><Copy /> Copy & edit</button>}
       <button className="btn" onClick={onEdit}><Pencil /> Edit</button>
       {onPlan && <button className="btn primary" onClick={onPlan}><Plus /> Add to meal plan</button>}
     </>}>
@@ -138,6 +141,16 @@ export function RecipeForm({ initial, onClose, onSaved }: { initial?: Recipe; on
   const [tags, setTags] = useState((initial?.tags || []).join(', '));
   const [touched, setTouched] = useState(false);
   const [newFor, setNewFor] = useState<number | null>(null);
+  const [pasteText, setPasteText] = useState('');
+  const quick = useQuickProduct();
+  const addFromText = () => {
+    const rows = parseIngredientText(pasteText, useStore.getState().data.products);
+    const added = rows.map((r) => ({ productId: r.productId || quick(r.name), grams: r.grams }));
+    setIngs([...ings.filter((x) => x.productId), ...added]);
+    setPasteText('');
+    const fresh = rows.filter((r) => !r.productId).length;
+    toast(`Added ${rows.length} ingredient${rows.length === 1 ? '' : 's'}${fresh ? ` (${fresh} new — nutrition is filled in automatically)` : ''}. Check the grams.`);
+  };
   const draft: Recipe = useMemo(() => ({ id: initial?.id || 'draft', name, emoji, image, mealTypes, servings, prepMinutes: prep, ingredients: ings.filter((i) => i.productId && i.grams > 0), steps: [], tags: [] }), [initial, name, emoji, image, mealTypes, servings, prep, ings]);
   const stats = recipeStats(draft, data, today);
   const valid = name.trim() && draft.ingredients.length > 0 && mealTypes.length > 0 && servings > 0;
@@ -150,7 +163,7 @@ export function RecipeForm({ initial, onClose, onSaved }: { initial?: Recipe; on
     onClose();
   };
   return (
-    <Modal wide title={initial ? 'Edit recipe' : 'New recipe'} onClose={onClose} footer={<><button className="btn" onClick={onClose}>Cancel</button><button className="btn primary" onClick={save}>Save recipe</button></>}>
+    <Modal wide title={initial?.id ? 'Edit recipe' : 'New recipe'} onClose={onClose} footer={<><button className="btn" onClick={onClose}>Cancel</button><button className="btn primary" onClick={save}>Save recipe</button></>}>
       <div className="grid g-main" style={{ alignItems: 'start' }}>
         <div className="form-grid">
           <Field label="Recipe name" className="full" error={touched && !name.trim() ? 'Required' : ''}><input className="input" value={name} onChange={(e) => setName(e.target.value)} placeholder="e.g. Chicken & chickpea bowl" /></Field>
@@ -160,10 +173,15 @@ export function RecipeForm({ initial, onClose, onSaved }: { initial?: Recipe; on
             <div className="row wrap" style={{ gap: 6 }}>{MEAL_TYPES.map((m) => <button type="button" key={m} className={`chip clickable ${mealTypes.includes(m) ? 'on' : ''}`} onClick={() => setMealTypes(mealTypes.includes(m) ? mealTypes.filter((x) => x !== m) : [...mealTypes, m])}>{m}</button>)}</div>
             {touched && !mealTypes.length && <span className="err">Pick at least one</span>}
           </div>
-          <div className="field full"><span className="label-text">Ingredients (grams for the whole recipe)</span>
+          <div className="field full"><span className="label-text">Ingredients (for the whole recipe)</span>
+            <div className="quick-ings">
+              <textarea className="input" rows={3} value={pasteText} onChange={(e) => setPasteText(e.target.value)} aria-label="Type or paste ingredients"
+                placeholder={'Type or paste your ingredient list, e.g.\n500g chicken breast, 2 onions, 1 tin chopped tomatoes, 1 cup rice, 2 tbsp oil'} />
+              <button type="button" className="btn sm primary" disabled={!pasteText.trim()} onClick={addFromText}><Plus /> Add these</button>
+            </div>
             {ings.map((ing, i) => (
               <div className="row" key={i} style={{ gap: 6 }}>
-                <ProductSelect className="input sm" value={ing.productId} allowEmpty="Choose ingredient…" allowNew onChange={(v) => (v === NEW_PRODUCT ? setNewFor(i) : setIngs(ings.map((x, j) => (j === i ? { ...x, productId: v } : x))))} />
+                <IngredientPicker value={ing.productId} onChange={(v) => setIngs(ings.map((x, j) => (j === i ? { ...x, productId: v } : x)))} />
                 <NumberInput className="input sm" style={{ width: 96, flexShrink: 0 }} min={0} value={ing.grams} ariaLabel="Grams" onChange={(n) => setIngs(ings.map((x, j) => (j === i ? { ...x, grams: n } : x)))} />
                 <span className="muted xs">g</span>
                 <button type="button" className="btn ghost icon sm" aria-label="Remove ingredient" onClick={() => setIngs(ings.filter((_, j) => j !== i))}><X /></button>

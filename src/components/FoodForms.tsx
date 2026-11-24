@@ -3,6 +3,7 @@ import { Trash2 } from 'lucide-react';
 import { Field, Modal, MoneyInput, NumberInput } from './ui';
 import { DateInput } from './DateInput';
 import { getToday, useData, useStore } from '../data/store';
+import { lookupNutrition } from '../domain/ingredients';
 import { PRODUCT_CATEGORIES, type DietTag, type ID, type PriceRecord, type Product, type ProductCategory } from '../domain/types';
 
 export const NEW_PRODUCT = '__new';
@@ -78,6 +79,13 @@ export function ProductForm({ initial, onClose, onSaved }: { initial?: Product; 
   const [category, setCategory] = useState<ProductCategory>(initial?.category || 'Pantry staples');
   const [packSize, setPackSize] = useState<number>(initial?.packSize || 500);
   const [n, setN] = useState(initial?.nutrition || { kcal: 0, protein: 0, carbs: 0, fat: 0 });
+  const [source, setSource] = useState(initial?.nutritionSource);
+  const [looking, setLooking] = useState<'idle' | 'busy' | 'none'>('idle');
+  const lookUp = async () => {
+    setLooking('busy');
+    const found = await lookupNutrition(name || initial?.name || '');
+    if (found) { setN(found); setSource('database'); setLooking('idle'); } else setLooking('none');
+  };
   const [tags, setTags] = useState<DietTag[]>(initial?.tags || []);
   const [pieceGrams, setPieceGrams] = useState<number | ''>(initial?.pieceGrams || '');
   const [pieceLabel, setPieceLabel] = useState(initial?.pieceLabel || '');
@@ -85,13 +93,13 @@ export function ProductForm({ initial, onClose, onSaved }: { initial?: Product; 
   const save = () => {
     setTouched(true);
     if (!name.trim() || !(packSize > 0)) return;
-    const id = saveProduct({ id: initial?.id, name: name.trim(), category, packSize, nutrition: n, tags, pieceGrams: pieceGrams || undefined, pieceLabel: pieceGrams ? pieceLabel || 'piece' : undefined });
+    const id = saveProduct({ id: initial?.id, name: name.trim(), category, packSize, nutrition: n, nutritionSource: source, tags, pieceGrams: pieceGrams || undefined, pieceLabel: pieceGrams ? pieceLabel || 'piece' : undefined });
     onSaved?.(id);
     onClose();
   };
   const num = (k: keyof typeof n) => (
     <Field label={k === 'kcal' ? 'kcal' : `${k[0].toUpperCase()}${k.slice(1)} (g)`}>
-      <NumberInput min={0} step="0.1" value={n[k]} onChange={(v) => setN({ ...n, [k]: v })} ariaLabel={k} />
+      <NumberInput min={0} step="0.1" value={n[k]} onChange={(v) => { setN({ ...n, [k]: v }); setSource('you'); }} ariaLabel={k} />
     </Field>
   );
   return (
@@ -104,7 +112,11 @@ export function ProductForm({ initial, onClose, onSaved }: { initial?: Product; 
         <Field label="Name" className="full" error={touched && !name.trim() ? 'Required' : ''}><input className="input" value={name} onChange={(e) => setName(e.target.value)} placeholder="e.g. Greek yoghurt" /></Field>
         <Field label="Aisle"><select className="input" value={category} onChange={(e) => setCategory(e.target.value as ProductCategory)}>{PRODUCT_CATEGORIES.map((c) => <option key={c}>{c}</option>)}</select></Field>
         <Field label="Usual pack size (g / ml)"><NumberInput min={1} value={packSize} onChange={setPackSize} ariaLabel="Usual pack size" /></Field>
-        <div className="full label-text">Nutrition per 100 g <span className="muted" style={{ fontWeight: 500 }}>(optional — from the label)</span></div>
+        <div className="full row between wrap" style={{ gap: 8 }}>
+          <span className="label-text">Nutrition per 100 g <span className="muted" style={{ fontWeight: 500 }}>(optional)</span></span>
+          <button type="button" className="btn sm" disabled={!name.trim() || looking === 'busy'} onClick={lookUp}>{looking === 'busy' ? 'Looking up…' : 'Look up nutrition'}</button>
+        </div>
+        {(source || looking === 'none') && <div className="full xs muted" style={{ marginTop: -6 }}>{looking === 'none' ? 'Nothing found online — type it from the label, or leave it.' : source === 'database' ? 'From the Open Food Facts food database — check against your label if you like.' : source === 'similar' ? 'Estimated from a similar ingredient.' : 'Entered by you.'}</div>}
         <div className="full" style={{ display: 'grid', gridTemplateColumns: 'repeat(4, minmax(0,1fr))', gap: 10 }}>{num('kcal')}{num('protein')}{num('carbs')}{num('fat')}</div>
         <Field label="Sold by the piece? Grams each" help="e.g. egg = 50"><input className="input" type="number" min={0} value={pieceGrams} onChange={(e) => setPieceGrams(e.target.value ? Number(e.target.value) : '')} /></Field>
         <Field label="Piece name"><input className="input" value={pieceLabel} onChange={(e) => setPieceLabel(e.target.value)} placeholder="egg" disabled={!pieceGrams} /></Field>

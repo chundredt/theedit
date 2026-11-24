@@ -77,18 +77,29 @@ export function Banner({ tone = 'default', children, icon }: { tone?: 'default' 
   return <div className={`banner ${tone}`}>{icon ?? <Ic />}<div>{children}</div></div>;
 }
 
+// Count open windows so the page only unlocks when the last one closes — closing a window that
+// was opened on top of another (e.g. New recipe inside the meal planner) used to leave the page stuck.
+let openModals = 0;
+function lockScroll() {
+  openModals++;
+  document.body.style.overflow = 'hidden';
+}
+function unlockScroll() {
+  openModals = Math.max(0, openModals - 1);
+  if (openModals === 0) document.body.style.overflow = '';
+}
+
 export function Modal({ title, onClose, children, footer, wide, sub }: { title: ReactNode; onClose: () => void; children: ReactNode; footer?: ReactNode; wide?: boolean; sub?: ReactNode }) {
   const ref = useRef<HTMLDivElement>(null);
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => e.key === 'Escape' && onClose();
     window.addEventListener('keydown', onKey);
-    const prev = document.body.style.overflow;
-    document.body.style.overflow = 'hidden';
+    lockScroll();
     const first = ref.current?.querySelector<HTMLElement>('input:not([type=checkbox]), select, textarea');
     first?.focus();
     return () => {
       window.removeEventListener('keydown', onKey);
-      document.body.style.overflow = prev;
+      unlockScroll();
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
