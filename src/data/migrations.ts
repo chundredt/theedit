@@ -2,7 +2,7 @@ import type { AppData } from '../domain/types';
 import { defaultRoutines, defaultSchedule } from './seed-wellness';
 
 /** Bump when the stored shape changes, and add a step below. */
-export const CURRENT_VERSION = 3;
+export const CURRENT_VERSION = 4;
 
 type Migration = (data: any) => any;
 const MIGRATIONS: Record<number, Migration> = {
@@ -15,6 +15,13 @@ const MIGRATIONS: Record<number, Migration> = {
   },
   // v3: habits and workouts.
   3: (d) => ({ habits: [], habitLogs: {}, routines: defaultRoutines(), workoutSchedule: defaultSchedule(), workoutLogs: [], ...d }),
+  // v4: weekly resets and a savings category for yearly costs.
+  4: (d) => {
+    d.resets ??= {};
+    if (!d.categories.some((c: any) => c.id === 'sav-yearly'))
+      d.categories.push({ id: 'sav-yearly', name: 'Yearly costs fund', group: 'savings', color: '#5A55C8' });
+    return d;
+  },
 };
 
 export function migrate(raw: any): AppData {

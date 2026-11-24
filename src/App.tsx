@@ -1,7 +1,7 @@
 import { useState, type ComponentType } from 'react';
 import {
   LayoutDashboard, Wallet, ReceiptText, PiggyBank, BarChart3, ShoppingBasket, CalendarDays, ChefHat,
-  ListChecks, Archive, Tags, Settings as SettingsIcon, Plus, MoreHorizontal, AlertTriangle, Sun, Dumbbell, Sparkles,
+  ListChecks, Archive, Tags, Settings as SettingsIcon, Plus, MoreHorizontal, AlertTriangle, Sun, Dumbbell, Sparkles, RefreshCcw,
 } from 'lucide-react';
 import { go, useRoute, useUI, type Route } from './lib/ui-state';
 import { useStore } from './data/store';
@@ -10,6 +10,7 @@ import { TransactionForm } from './components/TransactionForm';
 import { Onboarding } from './components/Onboarding';
 import { Dashboard } from './pages/Dashboard';
 import { TodayPage } from './pages/Today';
+import { ResetPage } from './pages/Reset';
 import { HabitsPage } from './pages/Habits';
 import { WorkoutsPage } from './pages/Workouts';
 import { BudgetPage } from './pages/Budget';
@@ -26,11 +27,12 @@ import { PricesPage } from './pages/Prices';
 
 interface NavItem { route: Route; label: string; icon: ComponentType<{ className?: string }>; page: ComponentType }
 const TODAY: NavItem = { route: 'today', label: 'Today', icon: Sun, page: TodayPage };
+const RESET: NavItem = { route: 'reset', label: 'Weekly reset', icon: RefreshCcw, page: ResetPage };
 const MONEY: NavItem[] = [
   { route: 'dashboard', label: 'Money overview', icon: LayoutDashboard, page: Dashboard },
   { route: 'budget', label: 'Budget', icon: Wallet, page: BudgetPage },
   { route: 'transactions', label: 'Transactions', icon: ReceiptText, page: TransactionsPage },
-  { route: 'savings', label: 'Savings goals', icon: PiggyBank, page: SavingsPage },
+  { route: 'savings', label: 'Savings', icon: PiggyBank, page: SavingsPage },
   { route: 'reports', label: 'Reports', icon: BarChart3, page: ReportsPage },
 ];
 const FOOD: NavItem[] = [
@@ -46,7 +48,7 @@ const WELLNESS: NavItem[] = [
   { route: 'habits', label: 'Habits', icon: Sparkles, page: HabitsPage },
 ];
 const SETTINGS: NavItem = { route: 'preferences', label: 'Settings & data', icon: SettingsIcon, page: SettingsPage };
-const ALL = [TODAY, ...MONEY, ...FOOD, ...WELLNESS, SETTINGS];
+const ALL = [TODAY, RESET, ...MONEY, ...FOOD, ...WELLNESS, SETTINGS];
 
 function Brand() {
   return (
@@ -77,6 +79,7 @@ export default function App() {
         <Brand />
         <button className="btn primary" style={{ margin: '0 4px 8px' }} onClick={() => setAddOpen(true)}><Plus /> Add expense</button>
         {link(TODAY)}
+        {link(RESET)}
         <div className="nav-group">Money</div>
         {MONEY.map(link)}
         <div className="nav-group">Food & groceries</div>

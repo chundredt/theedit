@@ -40,7 +40,7 @@ export function Dashboard() {
 
   const variableRows = s.rows.filter((r) => r.category.group === 'variable' && (r.planned > 0 || r.actual > 0)).sort((a, b) => b.ratio - a.ratio);
   const fixedRow = { planned: s.planned.fixed, actual: s.actual.fixed };
-  const goals = data.goals.map((gl) => goalProgress(data, gl, today));
+  const goals = data.goals.filter((gl) => gl.kind !== 'yearly').map((gl) => goalProgress(data, gl, today));
   const spentPct = s.income > 0 ? ((s.spent + s.saved) / s.income) * 100 : 0;
 
   return (

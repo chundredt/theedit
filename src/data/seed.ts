@@ -31,6 +31,7 @@ const CATEGORY_SEED: CatSeed[] = [
   ['sav-emergency', 'Emergency fund', 'savings', 1500],
   ['sav-holiday', 'Holiday savings', 'savings', 700],
   ['sav-personal', 'Personal savings', 'savings', 500],
+  ['sav-yearly', 'Yearly costs fund', 'savings', 0],
   ['sav-other', 'Other savings goals', 'savings', 0],
 ];
 
@@ -258,6 +259,7 @@ export function emptyData(today: string): AppData {
     routines: defaultRoutines(),
     workoutSchedule: defaultSchedule(),
     workoutLogs: [],
+    resets: {},
   };
 }
 
@@ -287,7 +289,12 @@ export function demoData(today: string): AppData {
     { id: 'goal-holiday', name: 'Drakensberg weekend away', target: 9000, openingBalance: 2500, targetDate: addDays(today, 300), monthlyContribution: 700, categoryId: 'sav-holiday', color: PALETTE[1], createdAt: today },
     { id: 'goal-laptop', name: 'New laptop', target: 15000, openingBalance: 1000, targetDate: addDays(today, 200), monthlyContribution: 500, categoryId: 'sav-personal', color: PALETTE[3], createdAt: today },
   ];
-  data.goals = goals;
+  data.goals = [
+    ...goals,
+    { id: 'y-licence', name: 'Car licence disc', emoji: '🚗', kind: 'yearly', repeats: true, target: 650, openingBalance: 400, targetDate: addDays(today, 45), monthlyContribution: 125, categoryId: 'sav-yearly', color: PALETTE[4], createdAt: today },
+    { id: 'y-service', name: 'Car service', emoji: '🔧', kind: 'yearly', repeats: true, target: 3500, openingBalance: 1200, targetDate: addDays(today, 150), monthlyContribution: 460, categoryId: 'sav-yearly', color: PALETTE[5], createdAt: today },
+    { id: 'y-xmas', name: 'Christmas & gifts', emoji: '🎁', kind: 'yearly', repeats: true, target: 3000, openingBalance: 2200, targetDate: addDays(today, 21), monthlyContribution: 400, categoryId: 'sav-yearly', color: PALETTE[7], createdAt: today },
+  ] as typeof goals;
 
   const groceryStores = ['checkers', 'flm', 'woolworths'] as const;
   const storeName = { checkers: 'Checkers', flm: "Food Lover's Market", woolworths: 'Woolworths' };

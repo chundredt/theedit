@@ -154,4 +154,40 @@ export async function stage2({ page, go, step, assert, money, SHOTS }) {
     await page.getByTestId('workout-today').getByText('Yoga & mobility').waitFor();
     await page.screenshot({ path: `${SHOTS}workouts.png`, fullPage: true });
   });
+
+  await step('yearly costs: quick add, budget the monthly amount, and pay one from its pot', async () => {
+    await go('savings');
+    const section = page.getByTestId('yearly-costs');
+    await section.getByRole('button', { name: /TV licence/ }).click();
+    await section.getByText('TV licence', { exact: true }).waitFor();
+    const need = money(await page.getByTestId('yearly-need').textContent());
+    await section.getByRole('button', { name: /^Budget R/ }).click();
+    await section.getByText(/for this ✓/).waitFor();
+    await go('dashboard');
+    const before = money(await page.getByTestId('safe-to-spend').textContent());
+    await go('savings');
+    const card = section.locator('.card', { hasText: 'Car licence disc' });
+    await card.getByRole('button', { name: "It's paid" }).click();
+    await page.getByLabel('Amount paid').fill('400');
+    await page.getByRole('button', { name: 'Mark as paid' }).click();
+    await page.getByText('Car licence disc marked as paid').waitFor();
+    await card.getByText('every year').waitFor();
+    await go('dashboard');
+    const after = money(await page.getByTestId('safe-to-spend').textContent());
+    assert(Math.abs(after - before) < 0.01, `paying from the pot shouldn't change safe-to-spend (${before} → ${after}); need was ${need}`);
+    await go('savings');
+    await page.screenshot({ path: `${SHOTS}yearly.png`, fullPage: true });
+  });
+
+  await step('weekly reset: walk the steps, set a focus, and see it on Today', async () => {
+    await go('reset');
+    await page.getByText('How last week went').waitFor();
+    await page.screenshot({ path: `${SHOTS}reset-1.png`, fullPage: true });
+    for (let i = 0; i < 4; i++) await page.getByRole('button', { name: 'Next' }).click();
+    await page.getByRole('button', { name: 'No takeaways this week' }).click();
+    await page.getByRole('button', { name: 'Finish reset' }).click();
+    await page.getByText('Weekly reset done').waitFor();
+    await go('today');
+    await page.getByTestId('week-focus').getByText('No takeaways this week').waitFor();
+  });
 }

@@ -125,7 +125,7 @@ await step('sample data loads and every page renders without errors', async () =
   await go('preferences');
   await page.getByRole('button', { name: 'Load sample data' }).click();
   await page.getByRole('button', { name: 'Load sample data' }).last().click();
-  for (const r of ['today', 'habits', 'workouts', 'dashboard', 'budget', 'transactions', 'groceries', 'savings', 'reports', 'meals', 'recipes', 'shopping', 'pantry', 'prices', 'preferences']) {
+  for (const r of ['today', 'reset', 'habits', 'workouts', 'dashboard', 'budget', 'transactions', 'groceries', 'savings', 'reports', 'meals', 'recipes', 'shopping', 'pantry', 'prices', 'preferences']) {
     await go(r);
     await page.waitForTimeout(250);
     await page.screenshot({ path: `${SHOTS}${r}.png`, fullPage: true });
@@ -159,7 +159,7 @@ await step('mobile layout has bottom navigation and no horizontal scroll', async
   const mp = await m.newPage();
   await mp.goto(`${BASE}?today=${TODAY}#dashboard`);
   await mp.evaluate((d) => localStorage.setItem('randwise:data:v1', d), await page.evaluate(() => localStorage.getItem('randwise:data:v1')));
-  for (const r of ['today', 'habits', 'workouts', 'dashboard', 'budget', 'meals', 'shopping']) {
+  for (const r of ['today', 'reset', 'habits', 'workouts', 'dashboard', 'budget', 'meals', 'shopping']) {
     await mp.goto(`${BASE}?today=${TODAY}#${r}`);
     await mp.reload();
     await mp.waitForTimeout(250);

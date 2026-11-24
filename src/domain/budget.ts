@@ -94,6 +94,8 @@ export interface PeriodSummary {
   actual: Record<CategoryGroup, number>;
   /** Fixed + variable spending (savings transfers excluded). */
   spent: number;
+  /** Part of `spent` paid out of savings pots (yearly costs). */
+  paidFromFunds: number;
   saved: number;
   /** Income − spending − savings transfers made so far. */
   remaining: number;
@@ -115,7 +117,12 @@ export function summarize(data: AppData, key: PeriodKey, today: ISODate): Period
   const sd = data.settings.periodStartDay;
   const budget = resolveBudget(data, key);
   const txs = transactionsIn(data, key);
-  const spentMap = sumBy(txs);
+  // Bills paid from a savings pot are real spending, but they were saved for over the year,
+  // so they don't count against this month's category budgets.
+  const spentMap = sumBy(txs.filter((t) => !t.fundedBy));
+  // Money moved into savings this month (withdrawals don't undo a transfer you already made).
+  const deposits = sumBy(txs.filter((t) => t.amount > 0));
+  const fundedSpent = round2(txs.filter((t) => t.fundedBy).reduce((s, t) => s + t.amount, 0));
   const incomeLines: IncomeStatus[] = budget.income.map((line) => {
     const received = line.received !== undefined && line.received !== null;
     const payDate = line.payDay ? dueDateInPeriod(key, sd, line.payDay) : undefined;
@@ -156,11 +163,16 @@ export function summarize(data: AppData, key: PeriodKey, today: ISODate): Period
     actual[g] = round2(actual[g]);
   });
   const plannedTotal = round2(planned.fixed + planned.variable + planned.savings);
-  const spent = round2(actual.fixed + actual.variable);
+  const spent = round2(actual.fixed + actual.variable + fundedSpent);
   const saved = actual.savings;
   // A bill with a due day counts as paid once a payment is recorded (amounts like electricity vary);
   // other categories still owe whatever is left of their plan.
-  const owed = (r: CategoryRow) => (r.category.group === 'fixed' && r.category.dueDay ? (r.actual > 0 ? 0 : r.planned) : Math.max(0, r.planned - r.actual));
+  const owed = (r: CategoryRow) =>
+    r.category.group === 'fixed' && r.category.dueDay
+      ? r.actual > 0 ? 0 : r.planned
+      : r.category.group === 'savings'
+        ? Math.max(0, r.planned - (deposits[r.category.id] || 0))
+        : Math.max(0, r.planned - r.actual);
   const outstanding = (g: CategoryGroup) => round2(rows.filter((r) => r.category.group === g).reduce((s, r) => s + owed(r), 0));
   const outstandingFixed = outstanding('fixed');
   const outstandingSavings = outstanding('savings');
@@ -195,6 +207,7 @@ export function summarize(data: AppData, key: PeriodKey, today: ISODate): Period
     discretionary: round2(incomeExpected - planned.fixed - planned.savings),
     actual,
     spent,
+    paidFromFunds: fundedSpent,
     saved,
     remaining,
     outstandingFixed,

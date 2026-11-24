@@ -1,6 +1,6 @@
 import { create } from 'zustand';
 import type {
-  AppData, Budget, Catalogue, Habit, Routine, WorkoutLog, Category, ID, IncomeLine, ISODate, MealPlanWeek, MealSlot, MealType, PantryItem,
+  AppData, Budget, Catalogue, Habit, Routine, WorkoutLog, WeeklyReset, Category, ID, IncomeLine, ISODate, MealPlanWeek, MealSlot, MealType, PantryItem,
   PeriodKey, PriceRecord, Product, Recipe, SavingsGoal, Settings, Store, Transaction, WeekKey,
 } from '../domain/types';
 import { demoData, emptyData, PALETTE } from './seed';
@@ -9,7 +9,8 @@ import { migrate } from './migrations';
 import { resolveBudget } from '../domain/budget';
 import { emptyWeek, buildShoppingList, weeklyNeeds } from '../domain/shopping';
 import { uid } from '../lib/id';
-import { round2, todayISO } from '../lib/format';
+import { round2, toISO, todayISO } from '../lib/format';
+import { goalProgress } from '../domain/savings';
 import { groceryCategory } from '../domain/budget';
 import { daysLeft, periodKeyFor, shiftPeriod } from '../domain/period';
 
@@ -58,6 +59,9 @@ interface State {
   saveGoal(g: Omit<SavingsGoal, 'id' | 'createdAt' | 'color'> & { id?: ID; color?: string }): ID;
   deleteGoal(id: ID): void;
   contribute(goalId: ID, amount: number, date: ISODate, note?: string): void;
+  /** Record a yearly cost as paid: the saved pot covers it (any shortfall is normal spending). */
+  payYearly(goalId: ID, amount: number, date: ISODate, categoryId: ID): void;
+  saveReset(r: WeeklyReset): void;
   // Food
   saveStore(s: Omit<Store, 'id'> & { id?: ID }): ID;
   deleteStore(id: ID): void;
@@ -261,6 +265,40 @@ export const useStore = create<State>((set, get) => {
       });
     },
 
+    payYearly(goalId, amount, date, categoryId) {
+      const g = get().data.goals.find((x) => x.id === goalId);
+      if (!g) return;
+      const saved = goalProgress(get().data, g, date).saved;
+      mutate((d) => {
+        const goal = d.goals.find((x) => x.id === goalId)!;
+        const fromPot = round2(Math.max(0, Math.min(saved, amount)));
+        const extra = round2(amount - fromPot);
+        const now = new Date().toISOString();
+        const fundCat = goal.categoryId || d.categories.find((c) => c.id === 'sav-yearly')?.id || d.categories.find((c) => c.group === 'savings')!.id;
+        if (fromPot > 0) {
+          d.transactions.unshift({ id: uid(), date, amount: fromPot, description: `${goal.name} (paid from yearly fund)`, categoryId, method: 'Debit card', fundedBy: goalId, createdAt: now });
+          d.transactions.unshift({ id: uid(), date, amount: -fromPot, description: `Used for ${goal.name}`, categoryId: fundCat, method: 'EFT', goalId, createdAt: now });
+        }
+        if (extra > 0) d.transactions.unshift({ id: uid(), date, amount: extra, description: `${goal.name} (not covered by fund)`, categoryId, method: 'Debit card', createdAt: now });
+        if (goal.repeats) {
+          const next = new Date(goal.targetDate + 'T00:00:00');
+          next.setFullYear(next.getFullYear() + 1);
+          goal.targetDate = toISO(next);
+          goal.target = round2(Math.max(goal.target, amount));
+          // Start next year's pot from whatever is left over; this year's transfers stay in your transactions.
+          goal.openingBalance = round2(Math.max(0, saved - fromPot));
+          d.transactions.filter((t) => t.goalId === goalId).forEach((t) => (t.goalId = undefined));
+        } else {
+          d.goals = d.goals.filter((x) => x.id !== goalId);
+        }
+      });
+      get().toast(`${g.name} marked as paid`);
+    },
+    saveReset(r) {
+      mutate((d) => {
+        d.resets[r.week] = r;
+      });
+    },
     saveStore(s) {
       const id = s.id || uid();
       mutate((d) => {

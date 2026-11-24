@@ -73,6 +73,8 @@ export interface Transaction {
   notes?: string;
   goalId?: ID;
   storeId?: ID;
+  /** Spending paid out of a savings pot (a yearly cost) — not counted against this month's budget categories. */
+  fundedBy?: ID;
   createdAt: string;
 }
 
@@ -87,6 +89,11 @@ export interface SavingsGoal {
   categoryId?: ID;
   color: string;
   createdAt: string;
+  /** A yearly cost (car licence, Christmas…) rather than a one-off goal. */
+  kind?: 'goal' | 'yearly';
+  /** Yearly costs roll their due date forward a year once paid. */
+  repeats?: boolean;
+  emoji?: string;
 }
 
 export interface Store {
@@ -253,6 +260,14 @@ export interface AppData {
   /** Weekday (0 = Monday … 6 = Sunday) → routine planned for that day. */
   workoutSchedule: Record<number, ID | undefined>;
   workoutLogs: WorkoutLog[];
+  /** Weekly reset check-ins, keyed by the Monday of the week being planned. */
+  resets: Record<WeekKey, WeeklyReset>;
+}
+
+export interface WeeklyReset {
+  week: WeekKey;
+  completedOn: ISODate;
+  focus?: string;
 }
 
 export type PastelColor = 'lavender' | 'coral' | 'periwinkle' | 'pink' | 'mint' | 'butter' | 'sky';

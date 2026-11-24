@@ -1,6 +1,7 @@
 import { useMemo, useState } from 'react';
 import { Check, ChevronLeft, ChevronRight, Minus, Plus } from 'lucide-react';
 import { DayStrip } from '../components/DayStrip';
+import { resetWeek } from './Reset';
 import { Progress, Ring } from '../components/ui';
 import { getToday, useData, useStore } from '../data/store';
 import { go, useUI } from '../lib/ui-state';
@@ -69,6 +70,27 @@ export function TodayPage() {
           <button className="btn icon ghost" aria-label="Next week" onClick={() => setDay(addDays(day, 7))}><ChevronRight /></button>
         </div>
       </div>
+
+      {(() => {
+        const dow = weekdayIndex(today);
+        const current = data.resets[mondayOf(today)];
+        const upcoming = resetWeek(today);
+        const needsReset = !data.resets[upcoming] && (dow >= 4 || dow === 0);
+        return (
+          <>
+            {current?.focus && (
+              <div className="tile pastel bg-butter row" style={{ gap: 12, padding: '14px 18px' }} data-testid="week-focus">
+                <span style={{ fontSize: 22 }}>🎯</span><div className="grow"><div className="eyebrow">This week's focus</div><b>{current.focus}</b></div>
+              </div>
+            )}
+            {needsReset && (
+              <a className="tile pastel bg-coral row" href="#reset" style={{ gap: 12, padding: '14px 18px', textDecoration: 'none' }} data-testid="reset-prompt">
+                <span style={{ fontSize: 22 }}>🔁</span><div className="grow"><div className="eyebrow">5 minutes</div><b>{dow === 0 ? 'Do your weekly reset' : 'Plan next week'}</b></div><span className="btn sm">Start</span>
+              </a>
+            )}
+          </>
+        );
+      })()}
 
       <DayStrip value={day} onChange={setDay} today={today} mark={(x) => (dayScore(data, x) ?? 0) >= 1} />
 

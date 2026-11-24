@@ -57,3 +57,59 @@ describe('workouts', () => {
     expect(weekStreak(d, TODAY)).toBe(2);
   });
 });
+
+import { summarize } from './budget';
+import { yearlyCosts, yearlyMonthlyNeed } from './yearly';
+import { resetWeek } from '../pages/Reset';
+
+describe('yearly costs', () => {
+  it('works out the monthly set-aside per cost', () => {
+    const d = emptyData(TODAY);
+    d.goals = [
+      { id: 'y1', name: 'Car licence disc', kind: 'yearly', repeats: true, target: 600, openingBalance: 0, targetDate: '2027-05-31', monthlyContribution: 100, color: '', createdAt: TODAY, categoryId: 'sav-yearly' },
+      { id: 'y2', name: 'Christmas', kind: 'yearly', repeats: true, target: 3000, openingBalance: 2000, targetDate: '2027-01-31', monthlyContribution: 500, color: '', createdAt: TODAY, categoryId: 'sav-yearly' },
+    ];
+    const ys = yearlyCosts(d, TODAY);
+    expect(ys.map((y) => y.goal.id)).toEqual(['y2', 'y1']); // soonest first
+    expect(ys[1].requiredMonthly).toBe(100); // 600 over 6 months (Dec–May)
+    expect(ys[0].requiredMonthly).toBe(500); // 1000 left over 2 months
+    expect(yearlyMonthlyNeed(d, TODAY)).toBe(600);
+  });
+  it('bills paid from the fund are spending, but not against category budgets, and leave money unchanged', () => {
+    const d = emptyData(TODAY);
+    d.budgets['2026-12'] = { period: '2026-12', income: [{ id: 'i', name: 'Salary', amount: 20000 }], allocations: { misc: 300 } };
+    const tx = (p: any) => ({ id: Math.random().toString(), description: 'x', method: 'EFT', createdAt: '', ...p });
+    d.transactions = [
+      tx({ date: '2026-12-02', amount: 650, categoryId: 'misc', fundedBy: 'y1' }),
+      tx({ date: '2026-12-02', amount: -650, categoryId: 'sav-yearly', goalId: 'y1' }),
+    ];
+    const s = summarize(d, '2026-12', TODAY);
+    expect(s.spent).toBe(650);
+    expect(s.paidFromFunds).toBe(650);
+    expect(s.saved).toBe(-650);
+    expect(s.remaining).toBe(20000);
+    expect(s.rows.find((r) => r.category.id === 'misc')!.actual).toBe(0);
+    expect(s.overspent).toEqual([]);
+  });
+});
+
+describe('weekly reset', () => {
+  it('plans next week from Friday, this week earlier in the week', () => {
+    expect(resetWeek('2026-12-03')).toBe('2026-11-30'); // Thursday → this week
+    expect(resetWeek('2026-12-04')).toBe('2026-12-07'); // Friday → next week
+    expect(resetWeek('2026-12-06')).toBe('2026-12-07'); // Sunday → next week
+    expect(resetWeek('2026-12-07')).toBe('2026-12-07'); // Monday → this week
+  });
+});
+
+describe('safe to spend with yearly-cost withdrawals', () => {
+  it('paying a bill from the pot does not change safe-to-spend', () => {
+    const d = emptyData(TODAY);
+    d.budgets['2026-12'] = { period: '2026-12', income: [{ id: 'i', name: 'Salary', amount: 20000 }], allocations: { 'sav-yearly': 1000 } };
+    const tx = (p: any) => ({ id: Math.random().toString(), description: 'x', method: 'EFT', createdAt: '', ...p });
+    d.transactions = [tx({ date: '2026-12-01', amount: 1000, categoryId: 'sav-yearly' })];
+    const before = summarize(d, '2026-12', TODAY).safeToSpend;
+    d.transactions.push(tx({ date: '2026-12-02', amount: 400, categoryId: 'misc', fundedBy: 'y' }), tx({ date: '2026-12-02', amount: -400, categoryId: 'sav-yearly', goalId: 'y' }));
+    expect(summarize(d, '2026-12', TODAY).safeToSpend).toBe(before);
+  });
+});
