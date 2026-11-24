@@ -563,3 +563,7 @@ h2 { font-weight: 800; font-size: 18px; letter-spacing: -0.01em; }
 .income-tick { width: 40px; height: 40px; }
 .income-tick.on { background: var(--good); border-color: var(--good); color: #fff; }
 .income-tick svg { width: 20px; height: 20px; }
+
+/* Privacy mode: blur typed amounts until you tap into them */
+.amounts-hidden .input-money input:not(:focus) { color: transparent; text-shadow: 0 0 9px color-mix(in srgb, var(--text) 70%, transparent); }
+.amounts-hidden .recharts-wrapper .recharts-cartesian-axis-tick text { opacity: 0.25; }

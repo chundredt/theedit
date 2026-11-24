@@ -33,7 +33,7 @@ const page = await ctx.newPage();
 const errors = [];
 page.on('pageerror', (e) => errors.push(e.message));
 page.on('console', (m) => m.type() === 'error' && !/fonts\.g/.test(m.text()) && errors.push(m.text()));
-const go = (route) => page.goto(`${BASE}?today=${TODAY}#${route}`);
+const go = (route) => page.goto(`${BASE}?today=${TODAY}&show#${route}`);
 
 await step('first run shows onboarding and can set up a fresh budget', async () => {
   await go('dashboard');
@@ -144,7 +144,7 @@ if (STAGE !== '1') {
 await step('setting up the day before payday opens next month with no late-income warnings', async () => {
   const c = await browser.newContext({ viewport: { width: 1280, height: 900 } });
   const p = await c.newPage();
-  await p.goto(`${BASE}?today=2026-11-24#budget`);
+  await p.goto(`${BASE}?today=2026-11-24&show#budget`);
   await p.getByText('Set up my own budget').click();
   await p.getByText('First budget: December 2026 (25/11/2026 – 24/12/2026)').waitFor();
   await p.getByLabel('Salary').fill('20000');
@@ -156,13 +156,27 @@ await step('setting up the day before payday opens next month with no late-incom
   await c.close();
 });
 
+await step('privacy mode hides amounts on open until the eye is tapped', async () => {
+  const c = await browser.newContext({ viewport: { width: 390, height: 844 } });
+  const p = await c.newPage();
+  await p.goto(`${BASE}?today=${TODAY}#today`);
+  await p.evaluate((d) => localStorage.setItem('randwise:data:v1', d), await page.evaluate(() => localStorage.getItem('randwise:data:v1')));
+  await p.reload();
+  const text = await p.locator('main').innerText();
+  assert(!/R\d/.test(text), 'no rand amounts should be visible while hidden');
+  assert(text.includes('R •••'), 'masked amounts expected');
+  await p.locator('.mobile-top [data-testid=privacy-toggle]').click();
+  assert(/R\d/.test(await p.locator('main').innerText()), 'amounts should show after tapping the eye');
+  await c.close();
+});
+
 await step('mobile layout has bottom navigation and no horizontal scroll', async () => {
   const m = await browser.newContext({ viewport: { width: 390, height: 844 }, deviceScaleFactor: 1 });
   const mp = await m.newPage();
-  await mp.goto(`${BASE}?today=${TODAY}#dashboard`);
+  await mp.goto(`${BASE}?today=${TODAY}&show#dashboard`);
   await mp.evaluate((d) => localStorage.setItem('randwise:data:v1', d), await page.evaluate(() => localStorage.getItem('randwise:data:v1')));
   for (const r of ['today', 'reset', 'habits', 'workouts', 'dashboard', 'budget', 'meals', 'shopping']) {
-    await mp.goto(`${BASE}?today=${TODAY}#${r}`);
+    await mp.goto(`${BASE}?today=${TODAY}&show#${r}`);
     await mp.reload();
     await mp.waitForTimeout(250);
     await mp.screenshot({ path: `${SHOTS}mobile-${r}.png`, fullPage: true });
@@ -170,7 +184,7 @@ await step('mobile layout has bottom navigation and no horizontal scroll', async
     assert(overflow <= 1, `${r}: page scrolls horizontally by ${overflow}px`);
   }
   assert(await mp.locator('.bottom-nav').isVisible(), 'bottom nav not visible');
-  await mp.goto(`${BASE}?today=${TODAY}#budget`);
+  await mp.goto(`${BASE}?today=${TODAY}&show#budget`);
   const box = await mp.getByLabel('Planned for Rent / bond').boundingBox();
   assert(box && box.width >= 100 && box.height >= 40, `phone budget amount box too small: ${JSON.stringify(box)}`);
   const fs = await mp.getByLabel('Planned for Rent / bond').evaluate((el) => parseFloat(getComputedStyle(el).fontSize));

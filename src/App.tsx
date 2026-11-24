@@ -1,10 +1,11 @@
 import { useState, type ComponentType } from 'react';
 import {
   LayoutDashboard, Wallet, ReceiptText, PiggyBank, BarChart3, ShoppingBasket, CalendarDays, ChefHat,
-  ListChecks, Archive, Tags, Settings as SettingsIcon, Plus, MoreHorizontal, AlertTriangle, Sun, Dumbbell, Sparkles, RefreshCcw,
+  ListChecks, Archive, Tags, Settings as SettingsIcon, Plus, MoreHorizontal, AlertTriangle, Sun, Dumbbell, Sparkles, RefreshCcw, Eye, EyeOff,
 } from 'lucide-react';
 import { go, useRoute, useUI, type Route } from './lib/ui-state';
 import { useStore } from './data/store';
+import { usePrivacy } from './lib/privacy';
 import { Modal, Toasts } from './components/ui';
 import { TransactionForm } from './components/TransactionForm';
 import { Onboarding } from './components/Onboarding';
@@ -59,9 +60,19 @@ function Brand() {
   );
 }
 
+function PrivacyButton() {
+  const { hidden, setHidden } = usePrivacy();
+  return (
+    <button className="btn ghost icon" onClick={() => setHidden(!hidden)} aria-pressed={hidden} aria-label={hidden ? 'Show balances' : 'Hide balances'} title={hidden ? 'Show balances' : 'Hide balances'} data-testid="privacy-toggle">
+      {hidden ? <EyeOff /> : <Eye />}
+    </button>
+  );
+}
+
 export default function App() {
   const route = useRoute();
   const onboarded = useStore((s) => s.data.settings.onboarded);
+  const hidden = usePrivacy((s) => s.hidden);
   const saveError = useStore((s) => s.saveError);
   const { addOpen, setAddOpen } = useUI();
   const [more, setMore] = useState(false);
@@ -76,7 +87,7 @@ export default function App() {
   return (
     <div className="app">
       <aside className="sidebar" aria-label="Main navigation">
-        <Brand />
+        <div className="row between" style={{ paddingRight: 4 }}><Brand /><PrivacyButton /></div>
         <button className="btn primary" style={{ margin: '0 4px 8px' }} onClick={() => setAddOpen(true)}><Plus /> Add expense</button>
         {link(TODAY)}
         {link(RESET)}
@@ -92,7 +103,10 @@ export default function App() {
       <div style={{ flex: 1, minWidth: 0 }}>
         <header className="mobile-top">
           <Brand />
-          <button className="btn ghost icon" onClick={() => go('preferences')} aria-label="Settings"><SettingsIcon /></button>
+          <div className="row" style={{ gap: 2 }}>
+            <PrivacyButton />
+            <button className="btn ghost icon" onClick={() => go('preferences')} aria-label="Settings"><SettingsIcon /></button>
+          </div>
         </header>
         <main className="main">
           {saveError && (
@@ -100,7 +114,7 @@ export default function App() {
               <AlertTriangle /> <div>Your browser isn't letting RandWise save (private mode or storage full). Changes will be lost when you close this tab — export a backup from Settings.</div>
             </div>
           )}
-          <Page key={route} />
+          <Page key={`${route}-${hidden}`} />
         </main>
       </div>
 

@@ -236,6 +236,8 @@ export interface Settings {
   proteinTarget: number;
   preferredStores: ID[];
   onboarded: boolean;
+  /** Hide amounts each time the app opens (privacy mode). Default on. */
+  hideAmountsOnOpen?: boolean;
 }
 
 export interface AppData {

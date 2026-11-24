@@ -5,6 +5,10 @@ import './styles.css';
 import { applyTheme, savedTheme } from './pages/Settings';
 
 applyTheme(savedTheme());
+// Privacy mode starts on each time the app opens, unless switched off in Settings.
+import { useStore } from './data/store';
+import { usePrivacy } from './lib/privacy';
+if (useStore.getState().data.settings.hideAmountsOnOpen !== false && !new URLSearchParams(location.search).has('show')) usePrivacy.getState().setHidden(true);
 
 createRoot(document.getElementById('root')!).render(
   <StrictMode>

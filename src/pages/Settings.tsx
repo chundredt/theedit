@@ -61,6 +61,10 @@ export function SettingsPage() {
                 {Array.from({ length: 28 }, (_, i) => i + 1).map((d) => <option key={d} value={d}>{d === 1 ? '1st (calendar month)' : `${ordinal(d)} (payday cycle)`}</option>)}
               </select>
             </Field>
+            <div className="field full"><span className="label-text">Privacy</span>
+              <label className="check"><input type="checkbox" checked={s.hideAmountsOnOpen !== false} onChange={(e) => updateSettings({ hideAmountsOnOpen: e.target.checked })} /> Hide amounts each time I open the app</label>
+              <span className="help">Amounts show as R ••• until you tap the eye icon at the top.</span>
+            </div>
             <Field label="Appearance" className="full">
               <Seg value={theme} onChange={setTheme} options={[{ value: 'system', label: 'System' }, { value: 'light', label: 'Light' }, { value: 'dark', label: 'Dark' }]} />
             </Field>

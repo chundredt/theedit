@@ -1,7 +1,9 @@
+import { amountsHidden, MASK } from './privacy';
 import type { ISODate } from '../domain/types';
 
 /** R2,345.50 — the format SA banking apps use. */
 export function money(value: number, opts: { cents?: boolean; sign?: boolean } = {}): string {
+  if (amountsHidden()) return MASK;
   const cents = opts.cents ?? true;
   const v = Math.round((Number.isFinite(value) ? value : 0) * 100) / 100;
   const abs = Math.abs(v);
@@ -15,6 +17,7 @@ export function money(value: number, opts: { cents?: boolean; sign?: boolean } =
 
 /** Compact money for tight spaces: R12.4k */
 export function moneyShort(value: number): string {
+  if (amountsHidden()) return 'R•';
   const abs = Math.abs(value);
   if (abs >= 1_000_000) return `${value < 0 ? '−' : ''}R${(abs / 1_000_000).toFixed(1)}m`;
   if (abs >= 10_000) return `${value < 0 ? '−' : ''}R${(abs / 1000).toFixed(1)}k`;
