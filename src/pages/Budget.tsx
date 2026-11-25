@@ -78,10 +78,12 @@ export function BudgetPage() {
       {GROUPS.map((g) => {
         const rows = s.rows.filter((r) => r.category.group === g.id);
         return (
-          <Card key={g.id} className="mt-16" title={<><span className="stat-dot" style={{ background: g.color }} />{g.title} <span className="muted small" style={{ fontWeight: 500 }}>· {money(s.planned[g.id], { cents: false })} planned</span></>}
-            action={<button className="btn sm" onClick={() => setEditing(`new-${g.id}`)}><Plus /> Add category</button>}>
+          <Card key={g.id} className="mt-16" title={phone ? <><span className="stat-dot" style={{ background: g.color }} />{g.title}</> : <><span className="stat-dot" style={{ background: g.color }} />{g.title} <span className="muted small" style={{ fontWeight: 500 }}>· {money(s.planned[g.id], { cents: false })} planned</span></>}
+            action={phone
+              ? <span className="row" style={{ gap: 8 }}><b className="num">{money(s.planned[g.id], { cents: false })}</b><button className="btn icon sm" aria-label="Add category" onClick={() => setEditing(`new-${g.id}`)}><Plus /></button></span>
+              : <button className="btn sm" onClick={() => setEditing(`new-${g.id}`)}><Plus /> Add category</button>}>
             {phone ? (
-              <div className="stack" style={{ gap: 10 }}>
+              <div className="pcat-list">
                 {rows.map((r) => <PhoneRow key={r.category.id} r={r} group={g.id} onEdit={() => setEditing(r.category)} onPlan={(v) => setAllocation(period, r.category.id, v)} />)}
                 {rows.length === 0 && <p className="muted small">No categories yet.</p>}
               </div>
@@ -105,7 +107,7 @@ export function BudgetPage() {
               </table>
             </div>
             )}
-            <p className="muted xs mt-8">{g.blurb}. {g.id === 'fixed' ? 'Add a due day to get debit order reminders.' : ''}</p>
+            <p className="muted xs mt-8">{phone ? 'Tap a name to edit or delete it. ' : `${g.blurb}. `}{g.id === 'fixed' ? 'Add a due day to get debit order reminders.' : ''}</p>
           </Card>
         );
       })}
@@ -120,31 +122,26 @@ export function BudgetPage() {
   );
 }
 
-/** Phone layout: one card per category with a full-width amount box. */
+/** Phone layout: a compact list row — name and planned amount on one line, due date and spent/left on the next. */
 function PhoneRow({ r, group, onEdit, onPlan }: { r: CategoryRow; group: CategoryGroup; onEdit: () => void; onPlan: (v: number) => void }) {
+  const left = r.remaining;
+  const sub = group === 'fixed' && r.category.dueDay ? `Due ${ordinal(r.category.dueDay)}${r.category.payMethod ? ` · ${r.category.payMethod}` : ''}` : '';
   return (
-    <div className="phone-cat">
-      <div className="row between" style={{ gap: 8 }}>
-        <button className="row" style={{ background: 'none', border: 0, padding: 0, cursor: 'pointer', gap: 8, textAlign: 'left', minWidth: 0 }} onClick={onEdit}>
+    <div className="pcat">
+      <div className="pcat-top">
+        <button className="pcat-name" onClick={onEdit} aria-label={`Edit ${r.category.name}`}>
           <span className="stat-dot" style={{ background: r.category.color }} />
-          <b style={{ fontSize: 16 }}>{r.category.name}</b>
-        </button>
-        <div className="row" style={{ gap: 4 }}>
+          <span className="t">{r.category.name}</span>
           {r.status === 'over' && <span className="chip danger">Over</span>}
-          {r.status === 'near' && <span className="chip warn">Near limit</span>}
-          <button className="btn ghost icon sm" aria-label={`Edit ${r.category.name}`} onClick={onEdit}><Pencil /></button>
-        </div>
+          {r.status === 'near' && <span className="chip warn">Near</span>}
+        </button>
+        <div className="pcat-amount"><MoneyInput value={r.planned} onCommit={(v) => v !== r.planned && onPlan(v)} ariaLabel={`Planned for ${r.category.name}`} /></div>
       </div>
-      {group === 'fixed' && r.category.dueDay && <div className="muted xs" style={{ marginTop: 2 }}>Due on the {ordinal(r.category.dueDay)}{r.category.payMethod ? ` · ${r.category.payMethod}` : ''}</div>}
-      <div className="phone-cat-amounts">
-        <label className="phone-cat-plan">
-          <span className="xs muted">Planned</span>
-          <MoneyInput value={r.planned} onCommit={(v) => v !== r.planned && onPlan(v)} ariaLabel={`Planned for ${r.category.name}`} />
-        </label>
-        <div className="phone-cat-stat"><span className="xs muted">{group === 'savings' ? 'Saved' : 'Spent'}</span><b>{money(r.actual, { cents: false })}</b></div>
-        <div className="phone-cat-stat"><span className="xs muted">Left</span><b className={r.remaining < 0 ? 'danger' : ''}>{money(r.remaining, { cents: false })}</b></div>
+      <div className="pcat-sub">
+        <span>{sub}</span>
+        <span>{money(r.actual, { cents: false })} {group === 'savings' ? 'saved' : 'spent'} · <b className={left < 0 ? 'danger' : ''}>{left < 0 ? `${money(-left, { cents: false })} over` : `${money(left, { cents: false })} left`}</b></span>
       </div>
-      {r.planned > 0 && <div className="bar thin mt-8"><span style={{ width: `${Math.min(100, (r.actual / r.planned) * 100)}%`, background: r.status === 'over' ? 'var(--danger)' : r.status === 'near' ? 'var(--warn)' : undefined }} /></div>}
+      {r.planned > 0 && <div className="bar thin"><span style={{ width: `${Math.min(100, (r.actual / r.planned) * 100)}%`, background: r.status === 'over' ? 'var(--danger)' : r.status === 'near' ? 'var(--warn)' : undefined }} /></div>}
     </div>
   );
 }

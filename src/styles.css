@@ -616,3 +616,16 @@ h2 { font-weight: 800; font-size: 18px; letter-spacing: -0.01em; }
 .ing-menu .ing-add { font-weight: 700; justify-content: flex-start; color: var(--sage-strong); }
 .quick-ings { display: flex; flex-direction: column; gap: 8px; padding: 12px; border-radius: 16px; background: var(--sage-tint); margin-bottom: 4px; }
 .quick-ings .btn { align-self: flex-start; }
+
+/* Phone budget list (replaces the tall cards) */
+.pcat-list { display: flex; flex-direction: column; }
+.pcat { padding: 12px 0; border-bottom: 1px solid var(--border); display: flex; flex-direction: column; gap: 6px; }
+.pcat:last-child { border-bottom: 0; }
+.pcat-top { display: flex; align-items: center; gap: 10px; }
+.pcat-name { flex: 1; min-width: 0; display: flex; align-items: center; gap: 8px; background: none; border: 0; padding: 0; text-align: left; cursor: pointer; color: var(--text); font-size: 16px; font-weight: 700; }
+.pcat-name .t { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.pcat-amount { width: 116px; flex-shrink: 0; }
+.pcat-amount .input { height: 40px; font-size: 16px; font-weight: 700; background: var(--surface-2); }
+.pcat-sub { display: flex; justify-content: space-between; gap: 8px; font-size: 13px; color: var(--muted); }
+.pcat-sub span:last-child { text-align: right; white-space: nowrap; }
+.pcat-sub b { color: var(--text-2); font-weight: 700; }
