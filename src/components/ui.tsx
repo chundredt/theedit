@@ -78,7 +78,7 @@ export function Banner({ tone = 'default', children, icon }: { tone?: 'default' 
 }
 
 // Count open windows so the page only unlocks when the last one closes — closing a window that
-// was opened on top of another (e.g. New recipe inside the meal planner) used to leave the page stuck.
+// was opened on top of another (e.g. a form inside another window) used to leave the page stuck.
 let openModals = 0;
 function lockScroll() {
   openModals++;

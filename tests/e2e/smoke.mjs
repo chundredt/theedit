@@ -58,9 +58,8 @@ await step('grocery page splits R2,000 into weekly/daily allowances', async () =
 
 await step('adding an expense updates grocery remaining and persists after reload', async () => {
   await page.getByRole('button', { name: 'Add purchase' }).click();
-  await page.getByPlaceholder('e.g. Checkers weekly shop').fill('Checkers weekly shop');
+  await page.getByPlaceholder('e.g. Weekly grocery shop').fill('Saturday shop');
   await page.getByLabel('Amount').fill('612,40');
-  await page.getByLabel('Store').selectOption('checkers');
   await page.getByRole('button', { name: 'Add expense' }).last().click();
   await page.waitForTimeout(200);
   let rem = money(await page.getByTestId('grocery-remaining').textContent());
@@ -113,22 +112,22 @@ await step('commission: add it, tick it in, type the real amount, and the money 
 
 await step('transactions can be edited and deleted (with undo)', async () => {
   await go('transactions');
-  await page.getByText('Checkers weekly shop').first().click();
+  await page.getByText('Saturday shop').first().click();
   await page.getByLabel('Amount').fill('700');
   await page.getByRole('button', { name: 'Save changes' }).click();
   await page.getByText('R700.00').first().waitFor();
-  await page.getByText('Checkers weekly shop').first().click();
+  await page.getByText('Saturday shop').first().click();
   await page.getByRole('button', { name: 'Delete' }).click();
   await page.getByText('No transactions here').waitFor();
   await page.getByRole('button', { name: 'Undo' }).click();
-  await page.getByText('Checkers weekly shop').first().waitFor();
+  await page.getByText('Saturday shop').first().waitFor();
 });
 
 await step('sample data loads and every page renders without errors', async () => {
   await go('preferences');
   await page.getByRole('button', { name: 'Load sample data' }).click();
   await page.getByRole('button', { name: 'Load sample data' }).last().click();
-  for (const r of ['today', 'reset', 'habits', 'workouts', 'dashboard', 'budget', 'transactions', 'groceries', 'savings', 'reports', 'meals', 'recipes', 'shopping', 'pantry', 'prices', 'preferences']) {
+  for (const r of ['today', 'reset', 'habits', 'workouts', 'dashboard', 'budget', 'transactions', 'groceries', 'savings', 'reports', 'meals', 'shopping', 'preferences']) {
     await go(r);
     await page.waitForTimeout(250);
     await page.screenshot({ path: `${SHOTS}${r}.png`, fullPage: true });
@@ -176,7 +175,7 @@ await step('mobile layout has bottom navigation and no horizontal scroll', async
   await mp.goto(`${BASE}?today=${TODAY}&show#dashboard`);
   await mp.evaluate((d) => localStorage.setItem('randwise:data:v1', d), await page.evaluate(() => localStorage.getItem('randwise:data:v1')));
   await mp.reload();
-  for (const r of ['today', 'reset', 'habits', 'workouts', 'dashboard', 'budget', 'transactions', 'savings', 'meals', 'shopping', 'groceries', 'prices']) {
+  for (const r of ['today', 'reset', 'habits', 'workouts', 'dashboard', 'budget', 'transactions', 'savings', 'meals', 'shopping', 'groceries']) {
     await mp.goto(`${BASE}?today=${TODAY}&show#${r}`);
     await mp.reload();
     await mp.waitForTimeout(250);
@@ -186,13 +185,15 @@ await step('mobile layout has bottom navigation and no horizontal scroll', async
   }
   assert(await mp.locator('.bottom-nav').isVisible(), 'bottom nav not visible');
   await mp.goto(`${BASE}?today=${TODAY}&show#meals`);
-  await mp.locator('.plan-mobile .slot').first().click();
+  await mp.getByRole('button', { name: 'Add to lunch' }).click();
+  await mp.getByLabel('What did you eat?').fill('chicken wrap, apple');
+  await mp.screenshot({ path: `${SHOTS}mobile-log-food.png` });
   const fits = await mp.evaluate(() => { const m = document.querySelector('.modal'); return m.getBoundingClientRect().right <= innerWidth + 1 && m.scrollWidth <= m.clientWidth + 1; });
-  assert(fits, 'meal picker should fit the phone screen');
+  assert(fits, 'log food window should fit the phone screen');
   const close = await mp.getByRole('button', { name: 'Close' }).boundingBox();
   assert(close && close.x + close.width <= 390 && close.width >= 40, `close button should be visible and big enough: ${JSON.stringify(close)}`);
   await mp.getByRole('button', { name: 'Close' }).click();
-  assert((await mp.locator('.modal').count()) === 0, 'picker should close');
+  assert((await mp.locator('.modal').count()) === 0, 'window should close');
   await mp.goto(`${BASE}?today=${TODAY}&show#budget`);
   const box = await mp.getByLabel('Planned for Rent / bond').boundingBox();
   assert(box && box.width >= 100 && box.height >= 40, `phone budget amount box too small: ${JSON.stringify(box)}`);

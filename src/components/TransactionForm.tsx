@@ -32,7 +32,6 @@ export function TransactionForm({ initial, onClose, defaults }: { initial?: Tran
   const [categoryId, setCategoryId] = useState<ID>(initial?.categoryId ?? defaults?.categoryId ?? grocery?.id ?? data.categories[0]?.id);
   const [method, setMethod] = useState<PaymentMethod>(initial?.method ?? defaults?.method ?? 'Debit card');
   const [notes, setNotes] = useState(initial?.notes ?? '');
-  const [storeId, setStoreId] = useState<ID>(initial?.storeId ?? defaults?.storeId ?? '');
   const [goalId, setGoalId] = useState<ID>(initial?.goalId ?? defaults?.goalId ?? '');
   const [touched, setTouched] = useState(false);
   const [categoryTouched, setCategoryTouched] = useState(!!initial || !!defaults?.categoryId);
@@ -58,7 +57,7 @@ export function TransactionForm({ initial, onClose, defaults }: { initial?: Tran
     if (!ok) return;
     const payload = {
       description: desc.trim(), amount: amount as number, date: date!, categoryId, method,
-      notes: notes.trim() || undefined, storeId: cat?.role === 'groceries' && storeId ? storeId : undefined,
+      notes: notes.trim() || undefined,
       goalId: cat?.group === 'savings' && goalId ? goalId : undefined,
     };
     if (initial) {
@@ -83,13 +82,12 @@ export function TransactionForm({ initial, onClose, defaults }: { initial?: Tran
     >
       <form className="form-grid" onSubmit={(e) => { e.preventDefault(); save(); }}>
         <Field label="Description" className="full" error={touched ? errors.desc : ''}>
-          <input className="input" list="tx-desc" value={desc} placeholder="e.g. Checkers weekly shop" onChange={(e) => {
+          <input className="input" list="tx-desc" value={desc} placeholder="e.g. Weekly grocery shop" onChange={(e) => {
             setDesc(e.target.value);
             const prev = history.get(e.target.value.trim().toLowerCase());
             if (prev && !categoryTouched) {
               setCategoryId(prev.categoryId);
               setMethod(prev.method);
-              if (prev.storeId) setStoreId(prev.storeId);
             }
           }} />
           <datalist id="tx-desc">{[...history.values()].slice(0, 60).map((t) => <option key={t.id} value={t.description} />)}</datalist>
@@ -108,14 +106,6 @@ export function TransactionForm({ initial, onClose, defaults }: { initial?: Tran
             {PAYMENT_METHODS.map((m) => <option key={m}>{m}</option>)}
           </select>
         </Field>
-        {cat?.role === 'groceries' && (
-          <Field label="Store" help="Used for grocery spend per store">
-            <select className="input" value={storeId} onChange={(e) => setStoreId(e.target.value)} aria-label="Store">
-              <option value="">—</option>
-              {data.stores.map((s) => <option key={s.id} value={s.id}>{s.name}</option>)}
-            </select>
-          </Field>
-        )}
         {cat?.group === 'savings' && goalsForCat.length > 0 && (
           <Field label="Savings goal" help="Counts towards this goal's progress">
             <select className="input" value={goalId} onChange={(e) => setGoalId(e.target.value)} aria-label="Savings goal">

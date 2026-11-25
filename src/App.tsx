@@ -1,7 +1,7 @@
 import { useState, type ComponentType } from 'react';
 import {
   LayoutDashboard, Wallet, ReceiptText, PiggyBank, BarChart3, ShoppingBasket, CalendarDays, ChefHat,
-  ListChecks, Archive, Tags, Settings as SettingsIcon, Plus, User, AlertTriangle, Sun, Dumbbell, Sparkles, RefreshCcw, Eye, EyeOff,
+  ListChecks, Settings as SettingsIcon, Plus, User, AlertTriangle, Sun, Dumbbell, Sparkles, RefreshCcw, Eye, EyeOff,
 } from 'lucide-react';
 import { go, useRoute, useUI, type Route } from './lib/ui-state';
 import { useStore } from './data/store';
@@ -21,11 +21,8 @@ import { GroceriesPage } from './pages/Groceries';
 import { SettingsPage } from './pages/Settings';
 import { SavingsPage } from './pages/Savings';
 import { ReportsPage } from './pages/Reports';
-import { MealPlanPage } from './pages/MealPlan';
-import { RecipesPage } from './pages/Recipes';
+import { FoodLogPage } from './pages/FoodLog';
 import { ShoppingPage } from './pages/Shopping';
-import { PantryPage } from './pages/Pantry';
-import { PricesPage } from './pages/Prices';
 
 interface NavItem { route: Route; label: string; icon: ComponentType<{ className?: string }>; page: ComponentType }
 interface Tab { id: string; label: string; icon: ComponentType<{ className?: string }>; sections: NavItem[] }
@@ -40,12 +37,9 @@ const TABS: Tab[] = [
     { route: 'reports', label: 'Report', icon: BarChart3, page: ReportsPage },
   ] },
   { id: 'food', label: 'Food', icon: ChefHat, sections: [
-    { route: 'meals', label: 'Meals', icon: CalendarDays, page: MealPlanPage },
-    { route: 'shopping', label: 'Shopping', icon: ListChecks, page: ShoppingPage },
+    { route: 'meals', label: 'Food log', icon: CalendarDays, page: FoodLogPage },
+    { route: 'shopping', label: 'Shopping list', icon: ListChecks, page: ShoppingPage },
     { route: 'groceries', label: 'Grocery money', icon: ShoppingBasket, page: GroceriesPage },
-    { route: 'recipes', label: 'Recipes', icon: ChefHat, page: RecipesPage },
-    { route: 'pantry', label: 'Pantry', icon: Archive, page: PantryPage },
-    { route: 'prices', label: 'Prices', icon: Tags, page: PricesPage },
   ] },
   { id: 'me', label: 'Me', icon: User, sections: [
     { route: 'habits', label: 'Habits', icon: Sparkles, page: HabitsPage },

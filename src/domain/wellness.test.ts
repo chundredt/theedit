@@ -117,13 +117,11 @@ describe('safe to spend with yearly-cost withdrawals', () => {
 import { challengeStreak, pickChallenge, describeChallenge } from './challenges';
 
 describe('daily challenge', () => {
-  it('puts food about to expire first, and swapping gives something else', () => {
+  it('puts the planned workout first, and swapping gives something else', () => {
     const d = emptyData(TODAY);
-    d.pantry = [{ id: 'p', productId: 'spinach', quantity: 100, expiry: '2026-12-04', addedOn: TODAY }];
     const first = pickChallenge(d, TODAY, 0);
-    expect(first.challenge.id).toBe('use-up');
-    expect(first.text.title).toBe('Use up the baby spinach');
-    expect(pickChallenge(d, TODAY, 1).challenge.id).not.toBe('use-up');
+    expect(first.challenge.id).toBe('workout');
+    expect(pickChallenge(d, TODAY, 1).challenge.id).not.toBe('workout');
   });
   it('fills in the protein target and avoids repeating recent challenges', () => {
     const d = emptyData(TODAY);

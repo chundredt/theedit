@@ -5,9 +5,6 @@ import { summarize, resolveBudget, commissionHistory } from './budget';
 import { groceryOverview } from './grocery';
 import { emptyData, demoData } from '../data/seed';
 import type { AppData, Transaction } from './types';
-import { recipeStats, dietConflicts } from './recipes';
-import { buildShoppingList, weeklyNeeds, emptyWeek, autoFillWeek } from './shopping';
-import { storePrices, activeSpecials } from './prices';
 import { goalProgress, monthsUntil } from './savings';
 import { parseCatalogueText, parseSize } from './flyer';
 
@@ -183,65 +180,6 @@ describe('grocery budget', () => {
   });
 });
 
-describe('prices, recipes and shopping', () => {
-  it('prefers active specials and ignores expired ones', () => {
-    const d = emptyData(TODAY);
-    const chicken = storePrices(d, 'chicken-breast', TODAY);
-    expect(chicken[0].store.id).toBe('checkers');
-    expect(chicken[0].isSpecial).toBe(true);
-    const cheese = storePrices(d, 'cheddar', TODAY).find((p) => p.store.id === 'checkers')!;
-    expect(cheese.isSpecial).toBe(false);
-    expect(activeSpecials(d, TODAY).some((s) => s.record.id === 's-cheddar-expired')).toBe(false);
-  });
-  it('calculates nutrition per serving from ingredients', () => {
-    const d = emptyData(TODAY);
-    const r = d.recipes.find((x) => x.id === 'boiled-eggs')!;
-    const s = recipeStats(r, d, TODAY);
-    expect(s.kcal).toBe(143);
-    expect(s.protein).toBeCloseTo(12.6, 1);
-    expect(s.costPerServing).toBeCloseTo((64.99 / 900) * 100, 2);
-  });
-  it('respects diet preferences', () => {
-    const d = emptyData(TODAY);
-    d.settings.diet = 'vegetarian';
-    const products = new Map(d.products.map((p) => [p.id, p]));
-    expect(dietConflicts(d.recipes.find((r) => r.id === 'chicken-curry')!, d.settings, products).length).toBeGreaterThan(0);
-    expect(dietConflicts(d.recipes.find((r) => r.id === 'lentil-chickpea-curry')!, d.settings, products)).toEqual([]);
-  });
-  it('combines duplicate ingredients, subtracts pantry and buys whole packs', () => {
-    const d = emptyData(TODAY);
-    const plan = emptyWeek('2026-11-23');
-    plan.days[0].breakfast = { recipeId: 'boiled-eggs', servings: 1 };
-    plan.days[1].breakfast = { recipeId: 'boiled-eggs', servings: 2 };
-    plan.days[2].lunch = { recipeId: 'egg-scramble', servings: 1 };
-    d.pantry = [{ id: 'p', productId: 'eggs', quantity: 100, addedOn: TODAY, expiry: '2026-12-01' }];
-    const eggs = weeklyNeeds(d, plan, TODAY).find((n) => n.product.id === 'eggs')!;
-    expect(eggs.required).toBe(450);
-    expect(eggs.inPantry).toBe(100);
-    expect(eggs.toBuy).toBe(350);
-    const list = buildShoppingList(d, plan, TODAY);
-    const item = list.items.find((i) => i.product.id === 'eggs')!;
-    expect(item.chosen?.packs).toBe(1);
-    expect(item.chosen?.store.id).toBe('woolworths'); // R64.99 special is cheapest
-    expect(item.leftover).toBe(550);
-  });
-  it('ignores expired pantry stock', () => {
-    const d = emptyData(TODAY);
-    const plan = emptyWeek('2026-11-23');
-    plan.days[0].snack = { recipeId: 'boiled-eggs', servings: 1 };
-    d.pantry = [{ id: 'p', productId: 'eggs', quantity: 500, addedOn: TODAY, expiry: '2026-11-01' }];
-    expect(weeklyNeeds(d, plan, TODAY)[0].toBuy).toBe(100);
-  });
-  it('auto-fills a week without breaking diet rules', () => {
-    const d = emptyData(TODAY);
-    d.settings.diet = 'vegetarian';
-    const plan = autoFillWeek(d, emptyWeek('2026-11-23'), TODAY, 1);
-    const ids = plan.days.flatMap((day) => Object.values(day).map((s) => s!.recipeId));
-    expect(ids.length).toBeGreaterThan(20);
-    expect(ids).not.toContain('chicken-curry');
-  });
-});
-
 describe('savings goals', () => {
   it('works out the monthly amount needed', () => {
     expect(monthsUntil('2026-11-24', '2027-05-24')).toBe(7);
@@ -296,29 +234,12 @@ describe('demo data', () => {
     expect(s.daysLeft).toBe(1);
     expect(s.spent).toBeGreaterThan(10000);
     expect(d.transactions.every((t) => t.date <= TODAY)).toBe(true);
-    expect(Object.values(d.mealPlans)[0].days.some((x) => x.dinner)).toBe(true);
+    expect(d.foodLog.some((e) => e.eaten) && d.foodLog.some((e) => !e.eaten)).toBe(true);
+    expect(d.stores).toEqual([]);
   });
 });
 
 import { parseReceiptText, receiptRows } from './receipt';
-import { learnFactor, adjustedPrice } from './prices';
-
-describe('self-adjusting prices', () => {
-  it('learns a store correction from shop totals, gently and within limits', () => {
-    expect(learnFactor(1, 0, 500, 550)).toBe(1.06); // 10% over, first shop counts 60%
-    expect(learnFactor(1.06, 3, 500, 500)).toBe(1.06); // spot on → unchanged
-    expect(learnFactor(1, 0, 500, 5000)).toBe(1.24); // a stock-up can't push past the cap (1.4)
-    expect(learnFactor(1, 0, 50, 80)).toBe(1); // too small a shop to learn from
-  });
-  it('uses fresh confirmed prices as-is and adjusts old or sample ones', () => {
-    const d = emptyData(TODAY);
-    d.storeFactors = { checkers: { factor: 1.1, shops: 2, updatedOn: TODAY } };
-    const fresh = { id: 'x', productId: 'rice', storeId: 'checkers', price: 50, packSize: 2000, isSpecial: false, verifiedOn: '2026-11-20', source: 'receipt' as const };
-    expect(adjustedPrice(d, fresh, TODAY)).toEqual({ price: 50, adjusted: false });
-    const old = { ...fresh, verifiedOn: '2025-11-24' }; // a year old: × 1.1 store × 1.05 inflation
-    expect(adjustedPrice(d, old, TODAY).price).toBeCloseTo(57.75, 1);
-  });
-});
 
 describe('till slip text', () => {
   const products = emptyData(TODAY).products;

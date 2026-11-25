@@ -1,4 +1,4 @@
-import { useMemo } from 'react';
+import { useMemo, useState } from 'react';
 import { Check, ChevronRight, Minus, Plus } from 'lucide-react';
 import { DailyChallenge } from '../components/DailyChallenge';
 import { resetWeek } from './Reset';
@@ -6,14 +6,15 @@ import { getToday, useData, useStore } from '../data/store';
 import { useUI } from '../lib/ui-state';
 import { summarize } from '../domain/budget';
 import { periodKeyFor, periodLabel, shiftPeriod, daysLeft } from '../domain/period';
-import { planTotals } from '../domain/shopping';
+import { dayTotals, entriesFor } from '../domain/food';
+import { LogFood, MEAL_LABEL } from '../components/LogFood';
+import { Progress } from '../components/ui';
 import { countOn, isDone, isDue, streak, weekdayIndex, isCounter, amountLabel, bump } from '../domain/habits';
 import { logsOn, plannedFor } from '../domain/workouts';
 import { daysBetween, mondayOf, money, monthName, toDate } from '../lib/format';
 import { exportBackup } from '../lib/exports';
 import { MEAL_TYPES, type MealType } from '../domain/types';
 
-const MEAL_LABEL: Record<MealType, string> = { breakfast: 'Breakfast', lunch: 'Lunch', dinner: 'Dinner', snack: 'Snacks' };
 
 export function TodayPage() {
   const data = useData();
@@ -23,10 +24,9 @@ export function TodayPage() {
   const sd = data.settings.periodStartDay;
   const key = periodKeyFor(today, sd);
   const s = useMemo(() => summarize(data, key, today), [data, key, today]);
-  const plan = data.mealPlans[mondayOf(today)];
-  const totals = useMemo(() => planTotals(data, plan, today), [data, plan, today]);
-  const dayIdx = weekdayIndex(today);
-  const dayTotals = totals.days[dayIdx];
+  const food = dayTotals(data.foodLog, today);
+  const kcalTarget = data.settings.kcalTarget || 2000;
+  const [logging, setLogging] = useState<MealType | null>(null);
   const habits = data.habits.filter((h) => isDue(h, today));
   const routine = plannedFor(data, today);
   const logs = logsOn(data, today);
@@ -71,16 +71,19 @@ export function TodayPage() {
 
       {/* 2. What am I eating? */}
       <section className="card" data-testid="today-meals">
-        <a className="card-link" href="#meals"><h2>Today's meals</h2><span className="muted">{dayTotals?.kcal ? `${Math.round(dayTotals.kcal)} kcal · ${Math.round(dayTotals.protein)} g protein` : ''}</span><ChevronRight /></a>
-        <div className="simple-list">
+        <a className="card-link" href="#meals"><h2>Food</h2><ChevronRight /></a>
+        <p className="food-big"><b>{Math.round(food.kcal).toLocaleString('en-ZA')}</b> <span className="muted">of {kcalTarget.toLocaleString('en-ZA')} kcal · {Math.round(food.protein)} g protein</span></p>
+        <Progress value={food.kcal} max={kcalTarget} size="thin" status={food.kcal > kcalTarget * 1.05 ? 'over' : undefined} />
+        <div className="simple-list mt-8">
           {MEAL_TYPES.map((m) => {
-            const slot = plan?.days[dayIdx]?.[m];
-            const r = slot && data.recipes.find((x) => x.id === slot.recipeId);
+            const items = entriesFor(data.foodLog, today, m);
+            const planned = items.length > 0 && items.every((e) => !e.eaten);
             return (
-              <a key={m} className="simple-row" href="#meals">
+              <button key={m} className="simple-row" onClick={() => setLogging(m)} aria-label={`Log ${MEAL_LABEL[m].toLowerCase()}`}>
                 <span className="when">{MEAL_LABEL[m]}</span>
-                {r ? <span className="what">{r.emoji} {r.name}</span> : <span className="what muted">Nothing planned</span>}
-              </a>
+                {items.length ? <span className={`what ${planned ? 'muted' : ''}`}>{items.map((e) => e.name).join(', ')}</span> : <span className="what muted">+ Add</span>}
+                {items.length > 0 && <span className="muted small nowrap" style={{ marginLeft: 'auto' }}>{planned ? 'planned' : `${items.filter((e) => e.eaten).reduce((a, e) => a + e.kcal, 0)} kcal`}</span>}
+              </button>
             );
           })}
         </div>
@@ -126,6 +129,7 @@ export function TodayPage() {
       </section>
 
       <DailyChallenge />
+      {logging && <LogFood meal={logging} onClose={() => setLogging(null)} />}
     </div>
   );
 }

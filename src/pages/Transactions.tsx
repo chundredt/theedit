@@ -75,7 +75,7 @@ export function TransactionsPage() {
                         <span className="avatar" style={{ background: `color-mix(in srgb, ${c?.color || '#999'} 15%, transparent)`, color: c?.color }}>{(c?.name || '?').slice(0, 2).toUpperCase()}</span>
                         <div className="grow">
                           <div className="title">{t.description}</div>
-                          <div className="meta">{c?.name || 'Deleted category'} · {t.method}{t.storeId ? ` · ${data.stores.find((s) => s.id === t.storeId)?.name || ''}` : ''}{t.notes ? ` · ${t.notes}` : ''}</div>
+                          <div className="meta">{c?.name || 'Deleted category'} · {t.method}{t.notes ? ` · ${t.notes}` : ''}</div>
                         </div>
                         <span className={`amount ${c?.group === 'savings' ? 'good' : ''}`}>{c?.group === 'savings' ? '+' : ''}{money(t.amount)}</span>
                       </button>

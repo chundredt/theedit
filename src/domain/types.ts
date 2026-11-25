@@ -246,6 +246,37 @@ export interface Settings {
   foodInflation?: number;
 }
 
+/** One thing eaten (or planned) on a day. */
+export interface FoodEntry {
+  id: ID;
+  date: ISODate;
+  meal: MealType;
+  name: string;
+  kcal: number;
+  protein: number;
+  /** False while it's only planned. */
+  eaten: boolean;
+}
+
+/** A food remembered per portion (or a favourite). */
+export interface MyFood {
+  id: ID;
+  name: string;
+  kcal: number;
+  protein: number;
+  /** Grams in one portion, when known. */
+  grams?: number;
+  favourite?: boolean;
+  uses: number;
+  lastUsed: ISODate;
+}
+
+export interface ShoppingItem {
+  id: ID;
+  name: string;
+  checked: boolean;
+}
+
 export interface AppData {
   version: number;
   settings: Settings;
@@ -274,6 +305,12 @@ export interface AppData {
   challenges: Record<ISODate, { id: string; swaps: number; done: boolean }>;
   /** Learned per-store correction from real shop totals (1 = estimates match). */
   storeFactors: Record<ID, { factor: number; shops: number; updatedOn: ISODate }>;
+  /** What you ate or plan to eat. */
+  foodLog: FoodEntry[];
+  /** Foods remembered from the log, with favourites. */
+  myFoods: MyFood[];
+  /** The simple shopping list. */
+  shoppingList: ShoppingItem[];
 }
 
 export interface WeeklyReset {

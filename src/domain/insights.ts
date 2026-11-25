@@ -2,7 +2,7 @@ import type { AppData, ISODate } from './types';
 import type { PeriodSummary } from './budget';
 import type { GroceryOverview } from './grocery';
 import { money } from '../lib/format';
-import { daysBetween, fmtDate } from '../lib/format';
+import { fmtDate } from '../lib/format';
 
 export type InsightTone = 'good' | 'warn' | 'danger' | 'info';
 export interface Insight {
@@ -13,7 +13,7 @@ export interface Insight {
 }
 
 /** Plain-language observations, most urgent first. */
-export function buildInsights(data: AppData, s: PeriodSummary, g: GroceryOverview, today: ISODate, isCurrent: boolean): Insight[] {
+export function buildInsights(data: AppData, s: PeriodSummary, g: GroceryOverview, _today: ISODate, isCurrent: boolean): Insight[] {
   const out: Insight[] = [];
   if (s.income === 0) {
     out.push({ id: 'no-income', tone: 'info', text: 'Add your monthly income to see what you can safely spend.', route: 'budget' });
@@ -57,13 +57,6 @@ export function buildInsights(data: AppData, s: PeriodSummary, g: GroceryOvervie
   if (!s.overAllocated && s.unallocated >= 50)
     out.push({ id: 'unalloc', tone: 'info', text: `${money(s.unallocated, { cents: false })} isn't planned yet. Savings is a good home for it.`, route: 'budget' });
 
-  if (isCurrent) {
-    const expiring = data.pantry.filter((p) => p.expiry && p.expiry >= today && daysBetween(today, p.expiry) <= 3);
-    if (expiring.length) {
-      const names = expiring.map((e) => data.products.find((p) => p.id === e.productId)?.name).filter(Boolean);
-      out.push({ id: 'pantry', tone: 'warn', text: `Use soon: ${names.slice(0, 3).join(', ')}${names.length > 3 ? ` and ${names.length - 3} more` : ''} expire${names.length === 1 ? 's' : ''} within 3 days.`, route: 'pantry' });
-    }
-  }
   const rank = { danger: 0, warn: 1, info: 2, good: 3 };
   return out.sort((a, b) => rank[a.tone] - rank[b.tone]);
 }

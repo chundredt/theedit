@@ -214,7 +214,7 @@ function DeleteCategory({ category, onClose }: { category: Category; onClose: ()
   const [moveTo, setMoveTo] = useState(others.find((c) => c.id === 'misc')?.id || others[0]?.id || '');
   const [mode, setMode] = useState<'move' | 'delete'>('move');
   if (category.role === 'groceries')
-    return <Modal title="Can't delete Groceries" onClose={onClose} footer={<button className="btn primary" onClick={onClose}>OK</button>}><p className="text-2">The grocery budget, meal planner and shopping list depend on this category. You can rename it or set its amount to R0 instead.</p></Modal>;
+    return <Modal title="Can't delete Groceries" onClose={onClose} footer={<button className="btn primary" onClick={onClose}>OK</button>}><p className="text-2">The grocery money page depends on this category. You can rename it or set its amount to R0 instead.</p></Modal>;
   return (
     <Confirm title={`Delete “${category.name}”?`} onClose={onClose} onConfirm={() => deleteCategory(category.id, mode === 'move' ? moveTo : undefined)}
       message={count ? `${count} transaction${count === 1 ? ' uses' : 's use'} this category.` : 'It will be removed from every month. You can undo straight after.'}>

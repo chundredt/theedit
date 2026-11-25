@@ -38,7 +38,7 @@ export function Onboarding() {
               </button>
               <button className="choice" onClick={loadDemo}>
                 <span className="ic"><Sparkles /></span>
-                <span><b>Explore with sample data</b><br /><span className="muted small">Three months of example income, debit orders, groceries, a meal plan and savings goals. You can reset it any time in Settings.</span></span>
+                <span><b>Explore with sample data</b><br /><span className="muted small">Three months of example income, debit orders, groceries, a food log and savings goals. You can reset it any time in Settings.</span></span>
               </button>
             </div>
           ) : (

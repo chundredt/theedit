@@ -1,86 +1,69 @@
-// Stage 2 & 3 flows: food planning, prices, pantry, savings, reports. Runs after sample data is loaded.
+// Stage 2 & 3 flows: food log, shopping list, savings, reports, wellness. Runs after sample data is loaded.
 export async function stage2({ page, go, step, assert, money, SHOTS }) {
-  await step('auto-fill completes the week and the shopping list updates', async () => {
-    await go('shopping');
-    const before = money(await page.getByTestId('list-total').textContent());
+  const kcalNow = async () => Number((await page.getByTestId('kcal-today').textContent()).replace(/[^\d]/g, ''));
+
+  await step('food log: type a breakfast and the calories fill in', async () => {
     await go('meals');
-    await page.getByRole('button', { name: 'Auto-fill empty slots' }).click();
-    await page.waitForTimeout(200);
-    const empty = await page.locator('.plan-grid .slot:not(.filled)').count();
-    assert(empty === 0, `${empty} empty slots after auto-fill`);
-    await page.screenshot({ path: `${SHOTS}meals-filled.png`, fullPage: true });
+    const before = await kcalNow();
+    await page.getByRole('button', { name: 'Add to breakfast' }).click();
+    await page.getByLabel('What did you eat?').fill('2 eggs, 2 slices toast, coffee with milk');
+    assert((await page.getByLabel('Calories in 2 eggs').inputValue()) === '156', 'eggs should be 156 kcal');
+    await page.locator('.modal').getByText('346 kcal').waitFor();
+    await page.locator('.modal').getByRole('button', { name: 'Save', exact: true }).click();
+    await page.getByTestId('meal-breakfast').getByText('2 eggs').waitFor();
+    assert((await kcalNow()) === before + 346, `kcal should rise by 346 (${before} → ${await kcalNow()})`);
+    await page.screenshot({ path: `${SHOTS}food-log.png`, fullPage: true });
+  });
+
+  await step('unknown food: type the calories once and it is remembered', async () => {
+    await page.getByRole('button', { name: 'Add to snacks' }).click();
+    await page.getByLabel('What did you eat?').fill('grandma special');
+    await page.locator('.modal').getByText('Not sure of this one').waitFor();
+    await page.getByLabel('Calories in Grandma special').fill('420');
+    await page.locator('.modal').getByRole('button', { name: 'Save', exact: true }).click();
+    await page.getByRole('button', { name: 'Add to snacks' }).click();
+    await page.getByLabel('What did you eat?').fill('2 grandma special');
+    assert((await page.getByLabel('Calories in 2 grandma special').inputValue()) === '840', 'remembered food should scale');
+    await page.locator('.modal').getByRole('button', { name: 'Add Grandma special' }).waitFor();
+    await page.getByRole('button', { name: 'Close' }).click();
+  });
+
+  await step('planning: plan tomorrow, then tick a planned meal as eaten', async () => {
+    await page.getByRole('tab', { name: /^Friday 4/ }).click();
+    await page.getByRole('button', { name: 'Add to dinner' }).click();
+    await page.getByLabel('What did you eat?').fill('steak and salad');
+    await page.locator('.modal').getByRole('button', { name: 'Plan it' }).click();
+    await page.getByTestId('meal-dinner').locator('.food-row.planned', { hasText: 'Steak' }).waitFor();
+    await page.getByRole('button', { name: 'Back to today' }).click();
+    const before = await kcalNow();
+    await page.getByTestId('meal-lunch').getByRole('button', { name: 'Ate it' }).click();
+    assert((await kcalNow()) > before, 'ticking lunch should add calories');
+  });
+
+  await step('shopping list: add planned food, add items, tick them off', async () => {
+    await page.getByRole('button', { name: 'Add to shopping list' }).click();
+    await page.locator('.modal').getByText('Steak', { exact: true }).waitFor();
+    await page.locator('.modal').getByRole('button', { name: /^Add \d+/ }).click();
     await go('shopping');
-    const after = money(await page.getByTestId('list-total').textContent());
-    assert(after > before, `list total should grow after adding snacks (${before} → ${after})`);
-  });
-
-  await step('meal slot can be changed and removed', async () => {
-    await go('meals');
-    await page.locator('.plan-grid .slot.filled').first().click();
-    await page.getByRole('button', { name: 'Remove meal' }).click();
-    assert((await page.locator('.plan-grid .slot:not(.filled)').count()) === 1, 'slot not removed');
-    await page.locator('.plan-grid .slot:not(.filled)').first().click();
-    await page.getByRole('button', { name: 'Choose' }).first().click();
-    assert((await page.locator('.plan-grid .slot:not(.filled)').count()) === 0, 'slot not re-filled');
-  });
-
-  await step('finishing a shop records grocery spend and adds leftovers to the pantry', async () => {
-    await go('groceries');
-    const remBefore = money(await page.getByTestId('grocery-remaining').textContent());
-    await go('shopping');
-    const ticks = page.locator('.shop-item .tick');
-    const n = Math.min(3, await ticks.count());
-    for (let i = 0; i < n; i++) await ticks.nth(i).click();
-    await page.getByRole('button', { name: 'Finish shop' }).click();
-    const inputs = page.locator('.modal .input-money input');
-    const count = await inputs.count();
-    for (let i = 0; i < count; i++) await inputs.nth(i).fill(i === 0 ? '400' : '0');
-    await page.getByRole('button', { name: /^Record R/ }).click();
-    await page.getByText('Shop recorded on').waitFor();
-    await go('groceries');
-    const remAfter = money(await page.getByTestId('grocery-remaining').textContent());
-    assert(Math.abs(remBefore - 400 - remAfter) < 0.01, `grocery remaining should drop by 400 (${remBefore} → ${remAfter})`);
-  });
-
-  await step('catalogue text import creates specials after review', async () => {
-    await go('prices');
-    await page.getByRole('tab', { name: 'Import catalogue' }).click();
-    await page.getByLabel('Import store').selectOption('woolworths');
-    await page.getByLabel('Catalogue text').fill('Free Range Large Eggs 18s Was R89.99 Now R72.99\nRolled Oats 1kg R36.99\nSomething unknown R10.00');
-    await page.getByRole('button', { name: 'Find prices' }).click();
-    await page.getByText('Review 3 items').waitFor();
-    await page.getByRole('button', { name: /^Save 2 prices$/ }).click();
-    await page.getByText('Saved 2 prices').waitFor();
-    await page.getByRole('tab', { name: 'Specials' }).click();
-    await page.getByText('R72.99').first().waitFor();
-    await page.screenshot({ path: `${SHOTS}prices-specials.png`, fullPage: true });
-    await page.getByRole('tab', { name: 'Compare prices' }).click();
-    await page.screenshot({ path: `${SHOTS}prices-compare.png`, fullPage: true });
-  });
-
-  await step('custom recipe: paste the ingredient list, nutrition is calculated', async () => {
-    await go('recipes');
-    await page.getByRole('button', { name: 'New recipe' }).click();
-    await page.getByPlaceholder('e.g. Chicken & chickpea bowl').fill('Tuna egg protein bowl');
-    await page.getByLabel('Servings').fill('1');
-    await page.getByLabel('Type or paste ingredients').fill('170g tuna chunks, 100g eggs');
-    await page.getByRole('button', { name: 'Add these' }).click();
-    assert((await page.locator('.modal input[aria-label="Ingredient"]').count()) === 2, 'two ingredient rows expected');
-    const protein = await page.locator('.modal .macros div').nth(1).textContent();
-    // 170 g tuna × 26/100 + 100 g egg × 12.6/100 = 56.8 g
-    assert(protein.startsWith('57g'), `protein should be ~57g, got ${protein}`);
-    await page.getByRole('button', { name: 'Save recipe' }).click();
-    await page.getByText('Tuna egg protein bowl').waitFor();
-  });
-
-  await step('pantry items can be added and edited', async () => {
-    await go('pantry');
+    await page.getByText('Steak', { exact: true }).waitFor();
+    await page.getByLabel('Add to list').fill('bread, butter');
     await page.getByRole('button', { name: 'Add item' }).click();
-    await page.locator('.modal select[aria-label="Product"]').selectOption('lentils');
-    await page.getByLabel('Quantity').fill('250');
-    await page.getByRole('button', { name: 'Save' }).click();
-    await page.getByText('Brown lentils (dry)').first().waitFor();
-    await page.screenshot({ path: `${SHOTS}pantry.png`, fullPage: true });
+    await page.getByRole('button', { name: 'Got Bread' }).click();
+    await page.getByText('In the trolley').waitFor();
+    assert((await page.getByText('Checkers').count()) === 0, 'no store names');
+    await page.screenshot({ path: `${SHOTS}shopping.png`, fullPage: true });
+  });
+
+  await step('till slip: type the total and it lands in grocery spending', async () => {
+    await go('groceries');
+    const before = money(await page.getByTestId('grocery-remaining').textContent());
+    await page.getByRole('button', { name: 'Scan till slip' }).click();
+    await page.getByRole('button', { name: 'Type it instead' }).click();
+    await page.getByLabel('Slip total').fill('345.50');
+    await page.getByRole('button', { name: 'Add to groceries' }).click();
+    await page.waitForTimeout(150);
+    const after = money(await page.getByTestId('grocery-remaining').textContent());
+    assert(Math.abs(before - after - 345.5) < 0.01, `remaining ${before} → ${after}`);
   });
 
   await step('savings: create a goal, contribute, and see progress', async () => {
@@ -103,15 +86,6 @@ export async function stage2({ page, go, step, assert, money, SHOTS }) {
     await page.getByText('Compare months').waitFor();
     await page.getByText('Where you overspent').waitFor();
     await page.screenshot({ path: `${SHOTS}reports.png`, fullPage: true });
-  });
-
-  await step('vegetarian setting removes meat recipes from suggestions', async () => {
-    await go('preferences');
-    await page.locator('select').filter({ hasText: 'Vegetarian' }).selectOption('vegetarian');
-    await go('recipes');
-    assert((await page.getByText('Chicken & potato curry').count()) === 0, 'chicken curry still shown');
-    await go('preferences');
-    await page.locator('select').filter({ hasText: 'Vegetarian' }).selectOption('none');
   });
 
   await step('today: tick habits, count water and mark the workout done', async () => {
@@ -223,69 +197,4 @@ export async function stage2({ page, go, step, assert, money, SHOTS }) {
     await card.getByRole('button', { name: 'Undo challenge done' }).waitFor();
   });
 
-  await step('number fields can be cleared and retyped (servings)', async () => {
-    await go('recipes');
-    await page.getByRole('button', { name: 'New recipe' }).click();
-    const servings = page.getByLabel('Servings');
-    await servings.click();
-    await servings.press('End');
-    await servings.press('Backspace');
-    assert((await servings.inputValue()) === '', `box should be empty after deleting, got "${await servings.inputValue()}"`);
-    await servings.pressSequentially('4');
-    assert((await servings.inputValue()) === '4', `servings should be 4, got "${await servings.inputValue()}"`);
-    await servings.press('Backspace');
-    await page.getByLabel('Prep and cook time').click();
-    assert((await servings.inputValue()) === '1', 'empty servings should fall back to 1 when you leave the box');
-    await page.keyboard.press('Escape');
-  });
-
-  await step('recipe form: search ingredients and add a new one in one tap', async () => {
-    await go('recipes');
-    await page.getByRole('button', { name: 'New recipe' }).click();
-    const pick = page.locator('.modal input[aria-label="Ingredient"]').first();
-    await pick.fill('boere');
-    await page.locator('.ing-menu').getByRole('button', { name: /Boerewors/ }).waitFor();
-    await pick.fill('Peri-peri sauce');
-    await page.getByRole('button', { name: 'Add “Peri-peri sauce”' }).click();
-    assert((await pick.inputValue()) === 'Peri-peri sauce', 'new ingredient should be selected');
-    await page.keyboard.press('Escape');
-    await go('prices');
-    await page.getByRole('tab', { name: 'Products & stores' }).click();
-    await page.getByText('Peri-peri sauce').first().waitFor();
-  });
-
-  await step('page still scrolls after creating a recipe from inside the meal planner', async () => {
-    await go('meals');
-    await page.locator('.plan-grid .slot').first().click();
-    await page.getByRole('button', { name: 'New recipe' }).click();
-    await page.getByPlaceholder('e.g. Chicken & chickpea bowl').fill('Quick oats');
-    await page.getByLabel('Type or paste ingredients').fill('60g oats, 250ml milk');
-    await page.getByRole('button', { name: 'Add these' }).click();
-    await page.getByRole('button', { name: 'Save recipe' }).click();
-    await page.waitForTimeout(300);
-    assert((await page.locator('.modal').count()) === 0, 'all windows should be closed');
-    const overflow = await page.evaluate(() => document.body.style.overflow);
-    assert(overflow === '', `page should scroll again, body overflow is "${overflow}"`);
-  });
-
-  await step('prices learn from a finished shop', async () => {
-    await go('prices');
-    await page.locator('.tile', { hasText: 'Prices look after themselves' }).getByText(/· 1 shop/).waitFor();
-  });
-
-  await step('till slip: paste the text, review the matches, and save the prices', async () => {
-    await go('prices');
-    await page.getByRole('button', { name: 'Scan till slip' }).click();
-    await page.getByText('Or paste the text').click();
-    await page.locator('.modal textarea').fill('WOOLWORTHS\n24/11/2026\nCLOVER LOW FAT MILK 2L   31.49\nBANANAS\n1.000 kg @ 24.99/kg   24.99\nTOTAL   56.48');
-    await page.getByRole('button', { name: 'Read text' }).click();
-    await page.getByRole('button', { name: 'Save 2 prices' }).waitFor();
-    assert((await page.getByLabel('Slip store').inputValue()) === 'woolworths', 'store should be read from the slip');
-    await page.getByRole('button', { name: 'Save 2 prices' }).click();
-    await page.getByText('2 prices updated from your till slip').waitFor();
-    await page.getByRole('tab', { name: 'Compare prices' }).click();
-    await page.getByPlaceholder('Search products').fill('Low-fat milk');
-    await page.getByText('till slip 24/11/2026').first().waitFor();
-    await page.getByText('R31.49').first().waitFor();
-  });
 }

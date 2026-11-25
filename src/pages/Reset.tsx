@@ -8,12 +8,12 @@ import { summarize, groceryCategory } from '../domain/budget';
 import { periodDays, periodKeyFor } from '../domain/period';
 import { countOn, isDue } from '../domain/habits';
 import { yearlyCosts } from '../domain/yearly';
-import { autoFillWeek, buildShoppingList, emptyWeek, planTotals } from '../domain/shopping';
+import { averageOver } from '../domain/food';
+import { repeatLastWeek } from '../data/food-actions';
 import { groceryOverview } from '../domain/grocery';
 import { addDays, daysBetween, fmtDate, money, mondayOf, toDate } from '../lib/format';
-import { MEAL_TYPES } from '../domain/types';
 
-const STEPS = ['Look back', 'Money check', 'Yearly costs', 'Meals & shopping', 'Move & focus'];
+const STEPS = ['Look back', 'Money check', 'Yearly costs', 'Food & shopping', 'Move & focus'];
 const FOCUS_IDEAS = ['Pack lunch 4 days', 'No takeaways this week', 'Walk after dinner', 'In bed by 22:30', 'One no-spend day', 'Hit my protein every day'];
 
 /** The Monday of the week being planned: next week on Fri–Sun, otherwise this week. */
@@ -30,7 +30,7 @@ export function ResetPage() {
   const existing = data.resets[week];
   const [focus, setFocus] = useState(existing?.focus || '');
   const [done, setDone] = useState(false);
-  const { saveReset, setSchedule, setWeek: savePlan, contribute, toast } = useStore.getState();
+  const { saveReset, setSchedule, contribute, toast } = useStore.getState();
   const setUIWeek = useUI((s) => s.setWeek);
   const sd = data.settings.periodStartDay;
   const key = periodKeyFor(today, sd);
@@ -62,13 +62,10 @@ export function ResetPage() {
   const yearly = yearlyCosts(data, today).filter((y) => y.remaining > 0);
   const ym = today.slice(0, 7);
 
-  // ---- Meals
-  const plan = data.mealPlans[week] || emptyWeek(week);
-  const filled = plan.days.reduce((n, d) => n + MEAL_TYPES.filter((m) => d[m]).length, 0);
-  const list = buildShoppingList(data, data.mealPlans[week], today, data.shopping[week]?.storeOverride);
-  const totals = planTotals(data, data.mealPlans[week], today);
-  const expiring = data.pantry.filter((p) => p.expiry && p.expiry >= today && p.expiry <= weekEnd);
-  const allowance = g.weeklyNow || g.weekly;
+  // ---- Food
+  const lastFood = averageOver(data.foodLog, Array.from({ length: 7 }, (_, i) => addDays(week, i - 7)));
+  const daysPlanned = Array.from({ length: 7 }, (_, i) => addDays(week, i)).filter((d) => data.foodLog.some((e) => e.date === d)).length;
+  const toBuy = data.shoppingList.filter((x) => !x.checked).length;
 
   const finish = () => {
     saveReset({ week, completedOn: today, focus: focus.trim() || undefined });
@@ -189,24 +186,23 @@ export function ResetPage() {
 
       {step === 3 && (
         <div className="stack" style={{ gap: 12 }}>
-          <h2 style={{ fontSize: 24 }}>Meals & shopping</h2>
+          <h2 style={{ fontSize: 24 }}>Food & shopping</h2>
           <div className="grid g-2" style={{ gap: 12 }}>
             <div className="tile pastel bg-pink">
-              <div className="eyebrow">Meals planned</div>
-              <div className="big mt-8">{filled} / 28</div>
-              <div className="small" style={{ opacity: 0.75 }}>{totals.days.some((x) => x.meals) ? `≈ ${Math.round(totals.days.filter((x) => x.meals).reduce((a, x) => a + x.protein, 0) / Math.max(1, totals.days.filter((x) => x.meals).length))} g protein a day` : 'Nothing planned yet'}</div>
+              <div className="eyebrow">Last week's eating</div>
+              <div className="big mt-8">{lastFood.days ? `${lastFood.kcal.toLocaleString('en-ZA')} kcal` : '—'}</div>
+              <div className="small" style={{ opacity: 0.75 }}>{lastFood.days ? `a day on average · ${lastFood.protein} g protein` : 'Nothing logged'}</div>
             </div>
-            <div className={`tile pastel ${list.total <= allowance ? 'bg-mint' : 'bg-coral'}`}>
-              <div className="eyebrow">Shopping list</div>
-              <div className="big mt-8">{money(list.total, { cents: false })}</div>
-              <div className="small" style={{ opacity: 0.75 }}>{list.items.length} items · allowance {money(allowance, { cents: false })}</div>
+            <div className="tile pastel bg-mint">
+              <div className="eyebrow">This week</div>
+              <div className="big mt-8">{daysPlanned} / 7</div>
+              <div className="small" style={{ opacity: 0.75 }}>days with food planned · {toBuy} on the shopping list</div>
             </div>
           </div>
-          {expiring.length > 0 && <Banner tone="warn">Use up this week: {expiring.map((p) => data.products.find((x) => x.id === p.productId)?.name).filter(Boolean).join(', ')}. Auto-fill picks recipes that use them.</Banner>}
           <div className="row wrap" style={{ gap: 8 }}>
-            {filled < 28 && <button className="btn primary" onClick={() => savePlan(autoFillWeek(data, plan, today, data.settings.householdSize))}><Sparkles /> Auto-fill empty meals</button>}
-            <button className="btn" onClick={() => { setUIWeek(week); go('meals'); }}>Open meal planner</button>
-            <button className="btn" onClick={() => { setUIWeek(week); go('shopping'); }}>Open shopping list</button>
+            <button className="btn primary" onClick={() => { const n = repeatLastWeek(week, today); toast(n ? `Planned ${n} foods from last week` : 'Nothing to copy into empty days'); }}><Sparkles /> Repeat last week's food</button>
+            <button className="btn" onClick={() => go('meals')}>Open food log</button>
+            <button className="btn" onClick={() => go('shopping')}>Open shopping list</button>
           </div>
         </div>
       )}

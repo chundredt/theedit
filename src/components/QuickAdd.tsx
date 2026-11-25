@@ -3,12 +3,12 @@ import { Check, Minus, Plus } from 'lucide-react';
 import { Modal } from './ui';
 import { TransactionForm } from './TransactionForm';
 import { getToday, useData, useStore } from '../data/store';
-import { go } from '../lib/ui-state';
+import { LogFood } from './LogFood';
 import { countOn, isDue, isCounter, amountLabel, bump } from '../domain/habits';
 import { HabitForm } from '../pages/Habits';
 import { ReceiptScan } from './ReceiptScan';
 
-type View = 'menu' | 'expense' | 'habits' | 'new-habit' | 'slip';
+type View = 'menu' | 'expense' | 'habits' | 'new-habit' | 'slip' | 'food';
 
 /** The + button: pick what to add, then go straight to that form. */
 export function QuickAdd({ onClose }: { onClose: () => void }) {
@@ -20,6 +20,7 @@ export function QuickAdd({ onClose }: { onClose: () => void }) {
 
   if (view === 'expense') return <TransactionForm onClose={onClose} />;
   if (view === 'new-habit') return <HabitForm onClose={onClose} />;
+  if (view === 'food') return <LogFood onClose={onClose} />;
   if (view === 'slip') return <ReceiptScan onClose={onClose} />;
   if (view === 'habits')
     return (
@@ -53,7 +54,7 @@ export function QuickAdd({ onClose }: { onClose: () => void }) {
     water
       ? { label: 'Water', sub: amountLabel(water, litres), emoji: '💧', color: 'mint', onClick: () => { const n = bump(water, litres, 1); setHabitCount(today, water.id, n); toast(`💧 ${amountLabel(water, n)}`); onClose(); } }
       : { label: 'Tick habits', emoji: '✅', color: 'mint', onClick: () => setView(habits.length ? 'habits' : 'new-habit') },
-    { label: "Today's meals", emoji: '🍳', color: 'butter', onClick: () => { onClose(); go('meals'); } },
+    { label: 'Food', sub: 'What you ate', emoji: '🍳', color: 'butter', onClick: () => setView('food') },
   ];
 
   return (

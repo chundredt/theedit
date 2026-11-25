@@ -49,13 +49,15 @@ export function defaultPeriod(today: string, startDay: number, budgets: Record<s
 export type Route =
   | 'today' | 'reset' | 'habits' | 'workouts'
   | 'dashboard' | 'budget' | 'transactions' | 'savings' | 'reports'
-  | 'groceries' | 'meals' | 'recipes' | 'shopping' | 'pantry' | 'prices' | 'preferences';
+  | 'groceries' | 'meals' | 'shopping' | 'preferences';
 
-const ROUTES: Route[] = ['today', 'reset', 'habits', 'workouts', 'dashboard', 'budget', 'transactions', 'savings', 'reports', 'groceries', 'meals', 'recipes', 'shopping', 'pantry', 'prices', 'preferences'];
+const ROUTES: Route[] = ['today', 'reset', 'habits', 'workouts', 'dashboard', 'budget', 'transactions', 'savings', 'reports', 'groceries', 'meals', 'shopping', 'preferences'];
 
 function parseHash(): Route {
-  const h = location.hash.replace(/^#\/?/, '').split(/[?/]/)[0] as Route;
-  return ROUTES.includes(h) ? h : 'today';
+  const h = location.hash.replace(/^#\/?/, '').split(/[?/]/)[0];
+  // Old links to removed pages land on the food log.
+  if (h === 'recipes' || h === 'pantry' || h === 'prices') return 'meals';
+  return ROUTES.includes(h as Route) ? (h as Route) : 'today';
 }
 
 export function useRoute(): Route {

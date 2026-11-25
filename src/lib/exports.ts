@@ -7,14 +7,13 @@ import { download, toCSV } from './csv';
 
 export function exportTransactions(data: AppData, txs: Transaction[], name = 'transactions') {
   const cat = new Map(data.categories.map((c) => [c.id, c]));
-  const store = new Map(data.stores.map((s) => [s.id, s.name]));
   const goal = new Map(data.goals.map((g) => [g.id, g.name]));
   const rows = [
     ['Date', 'Description', 'Amount (ZAR)', 'Category', 'Type', 'Payment method', 'Store', 'Savings goal', 'Notes'],
     ...txs
       .slice()
       .sort((a, b) => a.date.localeCompare(b.date))
-      .map((t) => [fmtDate(t.date), t.description, t.amount.toFixed(2), cat.get(t.categoryId)?.name || 'Deleted category', cat.get(t.categoryId)?.group || '', t.method, t.storeId ? store.get(t.storeId) : '', t.goalId ? goal.get(t.goalId) : '', t.notes]),
+      .map((t) => [fmtDate(t.date), t.description, t.amount.toFixed(2), cat.get(t.categoryId)?.name || 'Deleted category', cat.get(t.categoryId)?.group || '', t.method, t.goalId ? goal.get(t.goalId) : '', t.notes]),
   ];
   download(`theedit-${name}.csv`, toCSV(rows));
 }

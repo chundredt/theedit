@@ -1,8 +1,7 @@
 import type { AppData, Category, DietTag, PriceRecord, Product, ProductCategory, Recipe, MealType, Settings, Store, Transaction, PaymentMethod } from '../domain/types';
 import { CURRENT_VERSION } from './migrations';
-import { addDays, mondayOf, round2 } from '../lib/format';
+import { addDays, round2 } from '../lib/format';
 import { dueDateInPeriod, periodKeyFor, periodStart, shiftPeriod, periodEnd } from '../domain/period';
-import { autoFillWeek, emptyWeek } from '../domain/shopping';
 import { uid } from '../lib/id';
 import { extraProducts } from './seed-ingredients';
 import { defaultRoutines, defaultSchedule, demoWellness } from './seed-wellness';
@@ -234,12 +233,12 @@ export const DEFAULT_SETTINGS: Settings = {
   excludedProducts: [],
   kcalTarget: 2000,
   proteinTarget: 120,
-  preferredStores: ['checkers', 'flm', 'woolworths'],
+  preferredStores: [],
   onboarded: false,
 };
 
 /** A blank workspace: default categories, stores, products, sample prices and recipes; no money data. */
-export function emptyData(today: string): AppData {
+export function emptyData(_today?: string): AppData {
   return {
     version: CURRENT_VERSION,
     settings: { ...DEFAULT_SETTINGS },
@@ -247,11 +246,11 @@ export function emptyData(today: string): AppData {
     budgets: {},
     transactions: [],
     goals: [],
-    stores: DEFAULT_STORES.map((s) => ({ ...s })),
+    stores: [],
     products: defaultProducts(),
-    prices: samplePrices(today),
+    prices: [],
     catalogues: [],
-    recipes: defaultRecipes(),
+    recipes: [],
     mealPlans: {},
     shopping: {},
     pantry: [],
@@ -263,6 +262,9 @@ export function emptyData(today: string): AppData {
     resets: {},
     challenges: {},
     storeFactors: {},
+    foodLog: [],
+    myFoods: [],
+    shoppingList: [],
   };
 }
 
@@ -299,8 +301,6 @@ export function demoData(today: string): AppData {
     { id: 'y-xmas', name: 'Christmas & gifts', emoji: '🎁', kind: 'yearly', repeats: true, target: 3000, openingBalance: 2200, targetDate: addDays(today, 21), monthlyContribution: 400, categoryId: 'sav-yearly', color: PALETTE[7], createdAt: today },
   ] as typeof goals;
 
-  const groceryStores = ['checkers', 'flm', 'woolworths'] as const;
-  const storeName = { checkers: 'Checkers', flm: "Food Lover's Market", woolworths: 'Woolworths' };
   for (let back = 2; back >= 0; back--) {
     const key = shiftPeriod(current, -back);
     data.budgets[key] = {
@@ -329,10 +329,9 @@ export function demoData(today: string): AppData {
     for (let d = start, i = 0; d <= last; d = addDays(d, 1), i++) {
       const dow = new Date(d + 'T00:00:00').getDay();
       if (dow === 6) {
-        const store = groceryStores[Math.floor(rand() * 2)];
-        add(d, `${storeName[store]} weekly shop`, 520 + rand() * 260, 'groceries', 'Debit card', { storeId: store });
+        add(d, 'Weekly grocery shop', 520 + rand() * 260, 'groceries', 'Debit card');
       } else if (dow === 3 && rand() > 0.35) {
-        add(d, `Woolworths top-up`, 90 + rand() * 120, 'groceries', 'Tap / mobile pay', { storeId: 'woolworths' });
+        add(d, 'Grocery top-up', 90 + rand() * 120, 'groceries', 'Tap / mobile pay');
       }
       if (dow === 1 || (dow === 4 && rand() > 0.85)) add(d, rand() > 0.5 ? 'Engen fuel' : 'Shell fuel', 380 + rand() * 140, 'fuel', 'Debit card');
       if ((dow === 5 || dow === 0) && rand() > 0.7)
@@ -355,16 +354,34 @@ export function demoData(today: string): AppData {
   }
   data.transactions = txs.sort((a, b) => b.date.localeCompare(a.date));
 
-  data.pantry = [
-    ['eggs', 300, 6], ['oats', 600, 120], ['rice', 1200, 200], ['onions', 450, 14], ['chopped-tomatoes', 410, 300], ['spinach', 100, 2],
-    ['curry-powder', 80, 180], ['oil', 1500, 200], ['garlic', 60, 20], ['stock', 80, 300], ['pasta', 250, 250],
-  ].map(([productId, quantity, days]) => ({ id: uid(), productId: productId as string, quantity: quantity as number, expiry: addDays(today, days as number), addedOn: addDays(today, -5) }));
-
-  const week = mondayOf(today);
-  data.mealPlans[week] = autoFillWeek(data, emptyWeek(week), today, 1, ['breakfast', 'lunch', 'dinner']);
-  data.catalogues = [
-    { id: uid(), storeId: 'checkers', title: 'Checkers weekly specials (link only)', url: 'https://www.checkers.co.za/specials', addedOn: today, itemCount: 0, validFrom: addDays(today, -3), validTo: addDays(today, 5) },
-  ];
+  demoFood(data, today);
   demoWellness(data, today);
   return data;
+}
+
+/** A week of example eating: past days eaten, the rest of the week planned. */
+function demoFood(data: AppData, today: string) {
+  const days: [string, string, number, number][][] = [
+    [['breakfast', 'Oats with milk', 260, 11], ['breakfast', 'Coffee with milk', 30, 1.5], ['lunch', 'Chicken wrap', 450, 28], ['snack', 'Biltong', 125, 27], ['dinner', 'Chicken curry and rice', 505, 29]],
+    [['breakfast', '2 eggs and 2 toast', 316, 18.6], ['lunch', 'Tuna salad', 190, 32], ['snack', 'Apple', 95, 0.5], ['dinner', 'Spag bol', 550, 28]],
+    [['breakfast', 'Greek yoghurt and berries', 205, 14], ['lunch', 'Leftover spag bol', 550, 28], ['snack', 'Protein shake', 120, 24], ['dinner', 'Steak, potato and veg', 710, 56]],
+  ];
+  const start = addDays(today, -6);
+  for (let i = 0; i < 13; i++) {
+    const date = addDays(start, i);
+    const eaten = date < today;
+    for (const [meal, name, kcal, protein] of days[i % 3]) {
+      if (date === today && meal !== 'breakfast') {
+        data.foodLog.push({ id: uid(), date, meal: meal as MealType, name, kcal, protein, eaten: false });
+        continue;
+      }
+      if (date > addDays(today, 3)) continue;
+      data.foodLog.push({ id: uid(), date, meal: meal as MealType, name, kcal, protein, eaten: eaten || date === today });
+    }
+  }
+  data.myFoods = [
+    { id: 'mf-coffee', name: 'Coffee with milk', kcal: 30, protein: 1.5, favourite: true, uses: 6, lastUsed: today },
+    { id: 'mf-oats', name: 'Oats with milk', kcal: 260, protein: 11, favourite: true, uses: 4, lastUsed: today },
+  ];
+  data.shoppingList = ['Eggs', 'Milk', 'Chicken breasts', 'Bananas', 'Oats'].map((name, i) => ({ id: uid(), name, checked: i === 0 }));
 }

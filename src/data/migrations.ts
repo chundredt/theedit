@@ -3,7 +3,7 @@ import { defaultRoutines, defaultSchedule } from './seed-wellness';
 import { extraProducts } from './seed-ingredients';
 
 /** Bump when the stored shape changes, and add a step below. */
-export const CURRENT_VERSION = 8;
+export const CURRENT_VERSION = 9;
 
 type Migration = (data: any) => any;
 const MIGRATIONS: Record<number, Migration> = {
@@ -45,6 +45,8 @@ const MIGRATIONS: Record<number, Migration> = {
     }
     return d;
   },
+  // v9: food log replaces the meal planner; a plain shopping list replaces the store-priced one.
+  9: (d) => ({ foodLog: [], myFoods: [], shoppingList: [], ...d }),
 };
 
 export function migrate(raw: any): AppData {
