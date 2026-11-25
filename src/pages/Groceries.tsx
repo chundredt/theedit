@@ -39,7 +39,7 @@ export function GroceriesPage() {
 
   return (
     <>
-      <PageHeader title="Grocery budget" sub="Know what you can spend this week, not just this month.">
+      <PageHeader title="Grocery money" sub="What you can spend on food this week.">
         <PeriodNav value={period} onChange={setPeriod} startDay={data.settings.periodStartDay} />
         <button className="btn" onClick={() => setScanning(true)}><Camera /> Scan till slip</button>
         <button className="btn primary" onClick={() => setAdding('new')}><Plus /> Add purchase</button>

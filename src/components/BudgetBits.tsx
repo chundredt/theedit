@@ -4,23 +4,16 @@ import { Progress } from './ui';
 import { fmtDate, money } from '../lib/format';
 import { getToday, useStore } from '../data/store';
 
-export function BudgetRowView({ row, compact }: { row: CategoryRow; compact?: boolean }) {
-  const { category: c, planned, actual, remaining, status } = row;
+export function BudgetRowView({ row }: { row: CategoryRow }) {
+  const { category: c, planned, remaining, actual, status } = row;
+  const tone = status === 'over' ? 'danger' : status === 'near' ? 'warn' : '';
   return (
     <div className="budget-row">
       <div className="top">
-        <div className="name"><span className="stat-dot" style={{ background: c.color }} /><span className="t">{c.name}</span></div>
-        <div className="amt"><b style={{ color: 'var(--text)' }}>{money(actual, { cents: false })}</b> / {money(planned, { cents: false })}</div>
+        <div className="name"><span className="t">{c.name}</span></div>
+        <div className={`amt ${tone}`}>{planned <= 0 ? `${money(actual, { cents: false })} spent` : remaining >= 0 ? `${money(remaining, { cents: false })} left` : `${money(-remaining, { cents: false })} over`}</div>
       </div>
       <Progress value={actual} max={planned} status={status === 'idle' ? undefined : status} />
-      {!compact && (
-        <div className="foot">
-          <span>{planned > 0 ? `${Math.round((actual / planned) * 100)}% used` : actual > 0 ? 'No budget set' : 'Nothing spent yet'}</span>
-          <span className={status === 'over' ? 'danger' : status === 'near' ? 'warn' : ''}>
-            {remaining >= 0 ? `${money(remaining, { cents: false })} left` : `${money(-remaining, { cents: false })} over`}
-          </span>
-        </div>
-      )}
     </div>
   );
 }
@@ -43,10 +36,10 @@ export function BillList({ bills, limit, showPaid = true }: { bills: Bill[]; lim
             <span className={`avatar ${tone}`} style={{ background: tone ? `var(--${tone}-soft)` : 'var(--surface-2)' }}><Ic size={17} /></span>
             <div className="grow">
               <div className="title">{b.category.name}</div>
-              <div className="meta">{fmtDate(b.dueDate)} · {b.category.payMethod || 'Payment'} · <span className={tone}>{when}</span></div>
+              <div className="meta">{fmtDate(b.dueDate).slice(0, 5)} · <span className={tone}>{when}</span></div>
             </div>
             <div style={{ textAlign: 'right' }}>
-              <div className="amount">{money(b.status === 'paid' ? b.paid : b.outstanding)}</div>
+              <div className="amount">{money(b.status === 'paid' ? b.paid : b.outstanding, { cents: false })}</div>
               {b.status !== 'paid' && (
                 <button className="btn ghost sm" style={{ height: 24, padding: '0 6px', marginRight: -6 }} onClick={() => {
                   addTransaction({ date: getToday(), description: b.category.name, amount: b.outstanding, categoryId: b.category.id, method: b.category.payMethod || 'Debit order' });

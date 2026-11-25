@@ -374,7 +374,7 @@ function AutoPrices({ sampleCount }: { sampleCount: number }) {
     <div className="tile pastel bg-sky" style={{ marginBottom: 16 }}>
       <div className="eyebrow">Prices look after themselves</div>
       <p className="small mt-8" style={{ maxWidth: 720 }}>
-        When you finish a shop, TheEdit compares what you paid with its estimate and adjusts that store's prices. Older prices also rise with food inflation ({data.settings.foodInflation ?? 5}% a year). Scan a till slip any time for exact prices.
+        They learn from every shop you finish and every till slip you scan.
       </p>
       <div className="row wrap mt-12" style={{ gap: 6 }}>
         {learned.length ? learned.map(({ s, f }) => (

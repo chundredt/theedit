@@ -1,12 +1,12 @@
 import { useState, type ComponentType } from 'react';
 import {
   LayoutDashboard, Wallet, ReceiptText, PiggyBank, BarChart3, ShoppingBasket, CalendarDays, ChefHat,
-  ListChecks, Archive, Tags, Settings as SettingsIcon, Plus, MoreHorizontal, AlertTriangle, Sun, Dumbbell, Sparkles, RefreshCcw, Eye, EyeOff,
+  ListChecks, Archive, Tags, Settings as SettingsIcon, Plus, User, AlertTriangle, Sun, Dumbbell, Sparkles, RefreshCcw, Eye, EyeOff,
 } from 'lucide-react';
 import { go, useRoute, useUI, type Route } from './lib/ui-state';
 import { useStore } from './data/store';
 import { usePrivacy } from './lib/privacy';
-import { Modal, Toasts } from './components/ui';
+import { Toasts } from './components/ui';
 import { TransactionForm } from './components/TransactionForm';
 import { Onboarding } from './components/Onboarding';
 import { QuickAdd } from './components/QuickAdd';
@@ -28,29 +28,33 @@ import { PantryPage } from './pages/Pantry';
 import { PricesPage } from './pages/Prices';
 
 interface NavItem { route: Route; label: string; icon: ComponentType<{ className?: string }>; page: ComponentType }
-const TODAY: NavItem = { route: 'today', label: 'Today', icon: Sun, page: TodayPage };
-const RESET: NavItem = { route: 'reset', label: 'Weekly reset', icon: RefreshCcw, page: ResetPage };
-const MONEY: NavItem[] = [
-  { route: 'dashboard', label: 'Money overview', icon: LayoutDashboard, page: Dashboard },
-  { route: 'budget', label: 'Budget', icon: Wallet, page: BudgetPage },
-  { route: 'transactions', label: 'Transactions', icon: ReceiptText, page: TransactionsPage },
-  { route: 'savings', label: 'Savings', icon: PiggyBank, page: SavingsPage },
-  { route: 'reports', label: 'Reports', icon: BarChart3, page: ReportsPage },
+interface Tab { id: string; label: string; icon: ComponentType<{ className?: string }>; sections: NavItem[] }
+/** Four tabs. Each tab's sections show as a row of pills at the top of the page. */
+const TABS: Tab[] = [
+  { id: 'today', label: 'Today', icon: Sun, sections: [{ route: 'today', label: 'Today', icon: Sun, page: TodayPage }] },
+  { id: 'money', label: 'Money', icon: Wallet, sections: [
+    { route: 'dashboard', label: 'Overview', icon: LayoutDashboard, page: Dashboard },
+    { route: 'budget', label: 'Budget', icon: Wallet, page: BudgetPage },
+    { route: 'transactions', label: 'Spending', icon: ReceiptText, page: TransactionsPage },
+    { route: 'savings', label: 'Savings', icon: PiggyBank, page: SavingsPage },
+    { route: 'reports', label: 'Report', icon: BarChart3, page: ReportsPage },
+  ] },
+  { id: 'food', label: 'Food', icon: ChefHat, sections: [
+    { route: 'meals', label: 'Meals', icon: CalendarDays, page: MealPlanPage },
+    { route: 'shopping', label: 'Shopping', icon: ListChecks, page: ShoppingPage },
+    { route: 'groceries', label: 'Grocery money', icon: ShoppingBasket, page: GroceriesPage },
+    { route: 'recipes', label: 'Recipes', icon: ChefHat, page: RecipesPage },
+    { route: 'pantry', label: 'Pantry', icon: Archive, page: PantryPage },
+    { route: 'prices', label: 'Prices', icon: Tags, page: PricesPage },
+  ] },
+  { id: 'me', label: 'Me', icon: User, sections: [
+    { route: 'habits', label: 'Habits', icon: Sparkles, page: HabitsPage },
+    { route: 'workouts', label: 'Workouts', icon: Dumbbell, page: WorkoutsPage },
+    { route: 'reset', label: 'Weekly reset', icon: RefreshCcw, page: ResetPage },
+    { route: 'preferences', label: 'Settings', icon: SettingsIcon, page: SettingsPage },
+  ] },
 ];
-const FOOD: NavItem[] = [
-  { route: 'groceries', label: 'Grocery budget', icon: ShoppingBasket, page: GroceriesPage },
-  { route: 'meals', label: 'Meal planner', icon: CalendarDays, page: MealPlanPage },
-  { route: 'recipes', label: 'Recipes', icon: ChefHat, page: RecipesPage },
-  { route: 'shopping', label: 'Shopping list', icon: ListChecks, page: ShoppingPage },
-  { route: 'pantry', label: 'Pantry', icon: Archive, page: PantryPage },
-  { route: 'prices', label: 'Prices & specials', icon: Tags, page: PricesPage },
-];
-const WELLNESS: NavItem[] = [
-  { route: 'workouts', label: 'Workouts', icon: Dumbbell, page: WorkoutsPage },
-  { route: 'habits', label: 'Habits', icon: Sparkles, page: HabitsPage },
-];
-const SETTINGS: NavItem = { route: 'preferences', label: 'Settings & data', icon: SettingsIcon, page: SettingsPage };
-const ALL = [TODAY, RESET, ...MONEY, ...FOOD, ...WELLNESS, SETTINGS];
+const tabOf = (r: Route) => TABS.find((t) => t.sections.some((x) => x.route === r)) || TABS[0];
 
 function Brand() {
   return (
@@ -76,39 +80,26 @@ export default function App() {
   const hidden = usePrivacy((s) => s.hidden);
   const saveError = useStore((s) => s.saveError);
   const { addOpen, setAddOpen } = useUI();
-  const [more, setMore] = useState(false);
   const [quick, setQuick] = useState(false);
-  const current = ALL.find((n) => n.route === route) || TODAY;
+  const tab = tabOf(route);
+  const current = tab.sections.find((n) => n.route === route) || tab.sections[0];
   const Page = current.page;
-  const link = (n: NavItem) => (
-    <a key={n.route} href={`#${n.route}`} className={`nav-link ${route === n.route ? 'active' : ''}`} aria-current={route === n.route ? 'page' : undefined}>
-      <n.icon /> {n.label}
-    </a>
-  );
-
   return (
     <div className="app">
       <aside className="sidebar" aria-label="Main navigation">
         <div className="row between" style={{ paddingRight: 4 }}><Brand /><PrivacyButton /></div>
-        <button className="btn primary" style={{ margin: '0 4px 8px' }} onClick={() => setQuick(true)}><Plus /> Add</button>
-        {link(TODAY)}
-        {link(RESET)}
-        <div className="nav-group">Money</div>
-        {MONEY.map(link)}
-        <div className="nav-group">Food & groceries</div>
-        {FOOD.map(link)}
-        <div className="nav-group">Body & mind</div>
-        {WELLNESS.map(link)}
-        <div className="sidebar-foot">{link(SETTINGS)}</div>
+        <button className="btn primary" style={{ margin: '0 4px 12px' }} onClick={() => setQuick(true)}><Plus /> Add</button>
+        {TABS.map((t) => (
+          <a key={t.id} href={`#${t.sections[0].route}`} className={`nav-link ${tab.id === t.id ? 'active' : ''}`} aria-current={tab.id === t.id ? 'page' : undefined}>
+            <t.icon /> {t.label}
+          </a>
+        ))}
       </aside>
 
       <div style={{ flex: 1, minWidth: 0 }}>
         <header className="mobile-top">
           <Brand />
-          <div className="row" style={{ gap: 2 }}>
-            <PrivacyButton />
-            <button className="btn ghost icon" onClick={() => go('preferences')} aria-label="Settings"><SettingsIcon /></button>
-          </div>
+          <PrivacyButton />
         </header>
         <main className="main">
           {saveError && (
@@ -116,29 +107,23 @@ export default function App() {
               <AlertTriangle /> <div>Your browser isn't letting TheEdit save (private mode or storage full). Changes will be lost when you close this tab — export a backup from Settings.</div>
             </div>
           )}
+          {tab.sections.length > 1 && (
+            <nav className="subnav" aria-label={`${tab.label} sections`}>
+              {tab.sections.map((n) => (
+                <a key={n.route} href={`#${n.route}`} className={n.route === current.route ? 'on' : ''} aria-current={n.route === current.route ? 'page' : undefined}>{n.label}</a>
+              ))}
+            </nav>
+          )}
           <Page key={`${route}-${hidden}`} />
         </main>
       </div>
 
       <nav className="bottom-nav" aria-label="Mobile navigation">
-        <button className={route === 'today' ? 'active' : ''} onClick={() => go('today')}><Sun />Today</button>
-        <button className={MONEY.some((m) => m.route === route) ? 'active' : ''} onClick={() => go('dashboard')}><Wallet />Money</button>
+        {TABS.slice(0, 2).map((t) => <button key={t.id} className={tab.id === t.id ? 'active' : ''} aria-current={tab.id === t.id ? 'page' : undefined} onClick={() => go(t.sections[0].route)}><t.icon />{t.label}</button>)}
         <button onClick={() => setQuick(true)} aria-label="Add"><span className="add"><Plus /></span></button>
-        <button className={FOOD.some((f) => f.route === route) ? 'active' : ''} onClick={() => go('groceries')}><ShoppingBasket />Food</button>
-        <button onClick={() => setMore(true)}><MoreHorizontal />More</button>
+        {TABS.slice(2).map((t) => <button key={t.id} className={tab.id === t.id ? 'active' : ''} aria-current={tab.id === t.id ? 'page' : undefined} onClick={() => go(t.sections[0].route)}><t.icon />{t.label}</button>)}
       </nav>
 
-      {more && (
-        <Modal title="Go to" onClose={() => setMore(false)}>
-          <div className="sheet-nav">
-            {ALL.map((n) => (
-              <button key={n.route} className={route === n.route ? 'active' : ''} onClick={() => { go(n.route); setMore(false); }}>
-                <n.icon />{n.label}
-              </button>
-            ))}
-          </div>
-        </Modal>
-      )}
       {addOpen && <TransactionForm onClose={() => setAddOpen(false)} />}
       {quick && <QuickAdd onClose={() => setQuick(false)} />}
       {!onboarded && <Onboarding />}

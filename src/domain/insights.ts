@@ -24,7 +24,7 @@ export function buildInsights(data: AppData, s: PeriodSummary, g: GroceryOvervie
       out.push({ id: `late-${i.line.id}`, tone: 'warn', text: `${i.line.name} (${money(i.line.amount, { cents: false })}) was due on ${fmtDate(i.payDate)}. Mark it as received once it's in, with the actual amount.`, route: 'budget' });
   }
   for (const i of s.incomeLines.filter((x) => x.received && x.difference <= -1))
-    out.push({ id: `short-${i.line.id}`, tone: 'warn', text: `${i.line.name} came in ${money(-i.difference, { cents: false })} lower than planned. Safe-to-spend is adjusted — trim a flexible category to match.`, route: 'budget' });
+    out.push({ id: `short-${i.line.id}`, tone: 'warn', text: `${i.line.name} came in ${money(-i.difference, { cents: false })} lower than planned. Free to spend is adjusted to match.`, route: 'budget' });
   for (const i of s.incomeLines.filter((x) => x.received && x.difference >= 1))
     out.push({ id: `extra-${i.line.id}`, tone: 'good', text: `${i.line.name} was ${money(i.difference, { cents: false })} more than planned. Consider sending the extra to savings.`, route: 'savings' });
   if (isCurrent && s.daysLeft > 0 && s.daysLeft <= 5 && data.settings.periodStartDay > 1)
@@ -55,7 +55,7 @@ export function buildInsights(data: AppData, s: PeriodSummary, g: GroceryOvervie
     out.push({ id: 'saved', tone: pct >= 100 ? 'good' : 'info', text: pct >= 100 ? `You've saved ${money(s.saved, { cents: false })} this month — your full savings plan.` : `${money(s.saved, { cents: false })} saved so far (${pct}% of the ${money(s.planned.savings, { cents: false })} planned).`, route: 'savings' });
   }
   if (!s.overAllocated && s.unallocated >= 50)
-    out.push({ id: 'unalloc', tone: 'info', text: `${money(s.unallocated, { cents: false })} of income isn't allocated yet. Give it a job — savings is a good home.`, route: 'budget' });
+    out.push({ id: 'unalloc', tone: 'info', text: `${money(s.unallocated, { cents: false })} isn't planned yet. Savings is a good home for it.`, route: 'budget' });
 
   if (isCurrent) {
     const expiring = data.pantry.filter((p) => p.expiry && p.expiry >= today && daysBetween(today, p.expiry) <= 3);

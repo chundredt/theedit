@@ -75,10 +75,10 @@ await step('budget edits flow to the dashboard and over-allocation is flagged', 
   const rent = page.getByLabel('Planned for Rent / bond');
   await rent.fill('30000');
   await rent.press('Enter');
-  await page.getByText('Over-allocated by').waitFor();
+  await page.getByText('Over-planned by').waitFor();
   await rent.fill('8500');
   await rent.press('Enter');
-  await page.getByText('Still to allocate').waitFor();
+  await page.getByText('Not planned yet').waitFor();
   const un = money(await page.getByTestId('unallocated').textContent());
   assert(un === 25000 - 2000 - 8500, `unallocated should be 14500, got ${un}`);
   await go('dashboard');
@@ -175,7 +175,8 @@ await step('mobile layout has bottom navigation and no horizontal scroll', async
   const mp = await m.newPage();
   await mp.goto(`${BASE}?today=${TODAY}&show#dashboard`);
   await mp.evaluate((d) => localStorage.setItem('randwise:data:v1', d), await page.evaluate(() => localStorage.getItem('randwise:data:v1')));
-  for (const r of ['today', 'reset', 'habits', 'workouts', 'dashboard', 'budget', 'meals', 'shopping']) {
+  await mp.reload();
+  for (const r of ['today', 'reset', 'habits', 'workouts', 'dashboard', 'budget', 'transactions', 'savings', 'meals', 'shopping', 'groceries', 'prices']) {
     await mp.goto(`${BASE}?today=${TODAY}&show#${r}`);
     await mp.reload();
     await mp.waitForTimeout(250);

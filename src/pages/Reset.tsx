@@ -143,7 +143,7 @@ export function ResetPage() {
         <div className="stack" style={{ gap: 12 }}>
           <h2 style={{ fontSize: 24 }}>Money check</h2>
           <section className="card hero">
-            <div className="label small" style={{ fontWeight: 700 }}>Safe to spend per day</div>
+            <div className="label small" style={{ fontWeight: 700 }}>Free to spend per day</div>
             <div className="hero-amount" style={{ fontSize: 40 }}>{money(s.perDay, { cents: false })}</div>
             <div className="muted small">{money(s.safeToSpend, { cents: false })} for the {s.daysLeft} days left in this budget month</div>
           </section>

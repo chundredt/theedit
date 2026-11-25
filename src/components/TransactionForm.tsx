@@ -6,7 +6,7 @@ import { getToday, useStore } from '../data/store';
 import { PAYMENT_METHODS, type ID, type PaymentMethod, type Transaction } from '../domain/types';
 import { groceryCategory } from '../domain/budget';
 
-const GROUP_LABEL = { fixed: 'Fixed expenses', variable: 'Variable expenses', savings: 'Savings' } as const;
+const GROUP_LABEL = { fixed: 'Bills', variable: 'Everyday spending', savings: 'Savings' } as const;
 
 export function CategorySelect({ value, onChange, includeAll, className = 'input' }: { value: ID; onChange: (v: ID) => void; includeAll?: string; className?: string }) {
   const categories = useStore((s) => s.data.categories);

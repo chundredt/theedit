@@ -1,7 +1,6 @@
 import { useMemo, useState } from 'react';
 import { Copy, Pencil, Plus, Trash2 } from 'lucide-react';
 import { Banner, Card, Confirm, Field, Modal, MoneyInput, PageHeader, PeriodNav } from '../components/ui';
-import { BillList } from '../components/BudgetBits';
 import { IncomeCard } from '../components/IncomeCard';
 import { useIsPhone } from '../lib/useIsPhone';
 import { getToday, useData, useStore } from '../data/store';
@@ -9,12 +8,12 @@ import { usePeriod } from '../lib/ui-state';
 import { resolveBudget, summarize, type CategoryRow } from '../domain/budget';
 import { periodKeyFor, periodLabel, shiftPeriod } from '../domain/period';
 import { PAYMENT_METHODS, type Category, type CategoryGroup, type PaymentMethod } from '../domain/types';
-import { fmtPct, money, ordinal } from '../lib/format';
+import { money, ordinal } from '../lib/format';
 import { PALETTE } from '../data/seed';
 
 const GROUPS: { id: CategoryGroup; title: string; blurb: string; color: string }[] = [
-  { id: 'fixed', title: 'Fixed expenses', blurb: 'Rent, debit orders and recurring bills', color: 'var(--series-2)' },
-  { id: 'variable', title: 'Variable expenses', blurb: 'Day-to-day spending you control', color: 'var(--series-3)' },
+  { id: 'fixed', title: 'Bills', blurb: 'Rent, debit orders and recurring bills', color: 'var(--series-2)' },
+  { id: 'variable', title: 'Everyday spending', blurb: 'Groceries, fuel, eating out and the like', color: 'var(--series-3)' },
   { id: 'savings', title: 'Savings', blurb: 'Money you pay yourself first', color: 'var(--series-6)' },
 ];
 
@@ -34,7 +33,7 @@ export function BudgetPage() {
 
   return (
     <>
-      <PageHeader title="Monthly budget" sub="Give every rand a job before the month starts.">
+      <PageHeader title="Budget" sub="Plan where your pay goes.">
         <PeriodNav value={period} onChange={setPeriod} startDay={data.settings.periodStartDay} />
         {hasPrev && <button className="btn" onClick={() => copyBudget(prev, period)}><Copy /> Copy {periodLabel(prev, true)}</button>}
       </PageHeader>
@@ -58,19 +57,16 @@ export function BudgetPage() {
             {s.incomeExpected > 0 && GROUPS.map((g) => <span key={g.id} style={{ width: `${Math.min(100, (s.planned[g.id] / Math.max(s.incomeExpected, s.plannedTotal)) * 100)}%`, background: g.color }} />)}
           </div>
           <div className="legend mt-8">
-            {GROUPS.map((g) => <span key={g.id}><i className="stat-dot" style={{ background: g.color }} />{g.title.split(' ')[0]} {money(s.planned[g.id], { cents: false })}</span>)}
+            {GROUPS.map((g) => <span key={g.id}><i className="stat-dot" style={{ background: g.color }} />{g.title} {money(s.planned[g.id], { cents: false })}</span>)}
           </div>
           <div className="mt-16" style={{ display: 'grid', gap: 8 }}>
-            <div className="row between"><span className="text-2">Total allocated</span><b className="num">{money(s.plannedTotal)}</b></div>
-            <div className="row between"><span className="text-2">Income allocated</span><b className="num">{fmtPct(s.allocatedPct)}</b></div>
-            <div className="row between"><span className="text-2">Total expenses planned</span><b className="num">{money(s.planned.fixed + s.planned.variable)}</b></div>
-            <div className="row between"><span className="text-2">Left after bills & savings<br /><span className="xs muted">For groceries, fuel, eating out and other day-to-day spending</span></span><b className="num">{money(s.discretionary)}</b></div>
+            <div className="row between"><span className="text-2">Planned</span><b className="num">{money(s.plannedTotal, { cents: false })} <span className="muted" style={{ fontWeight: 500 }}>of {money(s.incomeExpected, { cents: false })}</span></b></div>
             <div className="row between" style={{ borderTop: '1px solid var(--border)', paddingTop: 8 }}>
-              <b>{s.overAllocated ? 'Over-allocated by' : 'Still to allocate'}</b>
+              <b>{s.overAllocated ? 'Over-planned by' : 'Not planned yet'}</b>
               <b className={`num ${s.overAllocated ? 'danger' : s.unallocated === 0 ? 'good' : ''}`} data-testid="unallocated">{money(Math.abs(s.unallocated))}</b>
             </div>
           </div>
-          {s.overAllocated && <div className="mt-12"><Banner tone="danger">You've planned more than you expect to earn. Reduce some categories by {money(-s.unallocated)}.</Banner></div>}
+          {s.overAllocated && <div className="mt-12"><Banner tone="danger">That's more than you expect to earn. Take {money(-s.unallocated)} off somewhere.</Banner></div>}
           {!s.overAllocated && s.incomeExpected > 0 && s.unallocated === 0 && <div className="mt-12"><Banner tone="good">Every rand has a job. Nice.</Banner></div>}
         </Card>
       </div>
@@ -107,14 +103,11 @@ export function BudgetPage() {
               </table>
             </div>
             )}
-            <p className="muted xs mt-8">{phone ? 'Tap a name to edit or delete it. ' : `${g.blurb}. `}{g.id === 'fixed' ? 'Add a due day to get debit order reminders.' : ''}</p>
+            {!phone && <p className="muted xs mt-8">{g.blurb}.</p>}
           </Card>
         );
       })}
 
-      <Card className="mt-16" title="Debit orders & bills this month">
-        <BillList bills={s.bills} />
-      </Card>
 
       {editing && <CategoryModal initial={typeof editing === 'string' ? undefined : editing} group={typeof editing === 'string' ? (editing.slice(4) as CategoryGroup) : editing.group} period={period} planned={typeof editing === 'string' ? 0 : budget.allocations[editing.id] || 0} onClose={() => setEditing(null)} onDelete={typeof editing === 'string' ? undefined : () => setDeleting(editing)} />}
       {deleting && <DeleteCategory category={deleting} onClose={() => setDeleting(null)} />}
@@ -139,7 +132,7 @@ function PhoneRow({ r, group, onEdit, onPlan }: { r: CategoryRow; group: Categor
       </div>
       <div className="pcat-sub">
         <span>{sub}</span>
-        <span>{money(r.actual, { cents: false })} {group === 'savings' ? 'saved' : 'spent'} · <b className={left < 0 ? 'danger' : ''}>{left < 0 ? `${money(-left, { cents: false })} over` : `${money(left, { cents: false })} left`}</b></span>
+        <b className={left < 0 ? 'danger' : ''}>{r.planned <= 0 && r.actual <= 0 ? '' : group === 'savings' ? (left <= 0 ? 'Saved ✓' : `${money(left, { cents: false })} to save`) : group === 'fixed' && left <= 0 && left > -1 ? 'Paid ✓' : left < 0 ? `${money(-left, { cents: false })} over` : `${money(left, { cents: false })} left`}</b>
       </div>
       {r.planned > 0 && <div className="bar thin"><span style={{ width: `${Math.min(100, (r.actual / r.planned) * 100)}%`, background: r.status === 'over' ? 'var(--danger)' : r.status === 'near' ? 'var(--warn)' : undefined }} /></div>}
     </div>
@@ -194,7 +187,7 @@ function CategoryModal({ initial, group: g0, period, planned, onClose, onDelete 
         <Field label="Name" className="full" error={touched && !name.trim() ? 'Give the category a name' : ''}><input className="input" value={name} onChange={(e) => setName(e.target.value)} placeholder="e.g. School fees" /></Field>
         <Field label="Type">
           <select className="input" value={group} onChange={(e) => setGroup(e.target.value as CategoryGroup)} disabled={initial?.role === 'groceries'}>
-            <option value="fixed">Fixed expense</option><option value="variable">Variable expense</option><option value="savings">Savings</option>
+            <option value="fixed">Bill</option><option value="variable">Everyday spending</option><option value="savings">Savings</option>
           </select>
         </Field>
         <Field label={`Planned for ${periodLabel(period)}`}><MoneyInput value={amount} onChange={setAmount} ariaLabel="Planned amount" /></Field>

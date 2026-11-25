@@ -116,11 +116,12 @@ export async function stage2({ page, go, step, assert, money, SHOTS }) {
 
   await step('today: tick habits, count water and mark the workout done', async () => {
     await go('today');
-    const chip = page.getByTestId('today-habits').locator('.chip');
-    const before = await chip.textContent();
+    const count = page.getByTestId('today-habits').locator('.count');
+    const before = parseInt(await count.textContent());
     await page.getByRole('button', { name: 'Complete 8,000 steps' }).click();
-    const after = await chip.textContent();
-    assert(Number(after.split('/')[0]) === Number(before.split('/')[0]) + 1, `habit count ${before} → ${after}`);
+    await page.getByRole('button', { name: 'Undo 8,000 steps' }).waitFor();
+    const after = parseInt(await count.textContent());
+    assert(after === before - 1, `habits left ${before} → ${after}`);
     await page.getByRole('button', { name: 'More Drink water' }).click();
     await page.getByText('1 of 2 L').waitFor();
     await page.getByTestId('today-workout').getByRole('button', { name: 'Mark done' }).click();
@@ -189,22 +190,17 @@ export async function stage2({ page, go, step, assert, money, SHOTS }) {
     await page.getByTestId('week-focus').getByText('No takeaways this week').waitFor();
   });
 
-  await step('+ opens a choice of what to add; tick a habit and log an activity from it', async () => {
+  await step('+ offers four things: water adds a glass, expense opens the form', async () => {
     const c = await page.context().browser().newContext({ viewport: { width: 390, height: 844 } });
     const p = await c.newPage();
     await p.goto(page.url().replace(/#.*$/, '#today'));
     await p.evaluate((d) => localStorage.setItem('randwise:data:v1', d), await page.evaluate(() => localStorage.getItem('randwise:data:v1')));
     await p.reload();
     await p.getByRole('button', { name: 'Add', exact: true }).click();
-    await p.locator('.modal').getByRole('button', { name: /Tick habits/ }).click();
-    await p.locator('.modal').getByRole('button', { name: 'Complete Hit my protein' }).click();
-    await p.locator('.modal').getByRole('button', { name: 'Undo Hit my protein' }).waitFor();
-    await p.locator('.modal').getByRole('button', { name: 'Done', exact: true }).click();
-    await p.getByRole('button', { name: 'Add', exact: true }).click();
+    assert((await p.locator('.quick-tile').count()) === 4, 'the + menu should offer four things');
     await p.screenshot({ path: `${SHOTS}quick-add.png` });
-    await p.locator('.modal').getByRole('button', { name: /Log activity|Other activity/ }).click();
-    await p.getByPlaceholder('Walk, padel, spin class…').fill('Padel');
-    await p.locator('.modal').getByRole('button', { name: 'Save', exact: true }).click();
+    await p.locator('.modal').getByRole('button', { name: /Water/ }).click();
+    await p.getByText(/💧 .* of 2 L/).first().waitFor();
     await p.getByRole('button', { name: 'Add', exact: true }).click();
     await p.locator('.modal').getByRole('button', { name: /Expense/ }).first().click();
     await p.getByRole('heading', { name: 'Add expense' }).waitFor();

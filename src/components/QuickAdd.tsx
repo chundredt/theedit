@@ -2,39 +2,25 @@ import { useState } from 'react';
 import { Check, Minus, Plus } from 'lucide-react';
 import { Modal } from './ui';
 import { TransactionForm } from './TransactionForm';
-import { IncomeCard } from './IncomeCard';
 import { getToday, useData, useStore } from '../data/store';
 import { go } from '../lib/ui-state';
-import { groceryCategory } from '../domain/budget';
-import { defaultPeriod } from '../lib/ui-state';
 import { countOn, isDue, isCounter, amountLabel, bump } from '../domain/habits';
-import { logsOn, plannedFor } from '../domain/workouts';
-import { LogForm } from '../pages/Workouts';
 import { HabitForm } from '../pages/Habits';
-import { PantryForm } from '../pages/Pantry';
 import { ReceiptScan } from './ReceiptScan';
 
-type View = 'menu' | 'expense' | 'grocery' | 'income' | 'habits' | 'new-habit' | 'activity' | 'pantry' | 'slip';
+type View = 'menu' | 'expense' | 'habits' | 'new-habit' | 'slip';
 
 /** The + button: pick what to add, then go straight to that form. */
 export function QuickAdd({ onClose }: { onClose: () => void }) {
   const data = useData();
   const today = getToday();
   const [view, setView] = useState<View>('menu');
-  const { saveWorkoutLog, setHabitCount, toast } = useStore.getState();
-  const routine = plannedFor(data, today);
-  const workoutDone = logsOn(data, today).length > 0;
+  const { setHabitCount, toast } = useStore.getState();
   const habits = data.habits.filter((h) => isDue(h, today));
-  const period = defaultPeriod(today, data.settings.periodStartDay, data.budgets);
 
   if (view === 'expense') return <TransactionForm onClose={onClose} />;
-  if (view === 'grocery') return <TransactionForm onClose={onClose} defaults={{ categoryId: groceryCategory(data)?.id }} />;
-  if (view === 'activity') return <LogForm date={today} onClose={onClose} />;
   if (view === 'new-habit') return <HabitForm onClose={onClose} />;
-  if (view === 'pantry') return <PantryForm onClose={onClose} />;
   if (view === 'slip') return <ReceiptScan onClose={onClose} />;
-  if (view === 'income')
-    return <Modal title="Income received" onClose={onClose} footer={<button className="btn primary" onClick={onClose}>Done</button>}><div className="quick-income"><IncomeCard period={period} /></div></Modal>;
   if (view === 'habits')
     return (
       <Modal title="Today's habits" onClose={onClose} footer={<><button className="btn" onClick={() => setView('new-habit')}><Plus /> New habit</button><button className="btn primary" onClick={onClose}>Done</button></>}>
@@ -58,20 +44,17 @@ export function QuickAdd({ onClose }: { onClose: () => void }) {
       </Modal>
     );
 
+  // The four things added most. Everything else lives on its own tab.
+  const water = data.habits.find((h) => h.unit === 'L' || /water/i.test(h.name));
+  const litres = water ? countOn(data, water.id, today) : 0;
   const tiles: { label: string; sub?: string; emoji: string; color: string; onClick: () => void }[] = [
     { label: 'Expense', emoji: '🧾', color: 'lavender', onClick: () => setView('expense') },
-    { label: 'Grocery shop', emoji: '🛒', color: 'mint', onClick: () => setView('grocery') },
-    { label: 'Scan till slip', sub: 'Updates your prices', emoji: '📸', color: 'sky', onClick: () => setView('slip') },
-    { label: 'Income in', sub: 'Tick salary, commission…', emoji: '💰', color: 'butter', onClick: () => setView('income') },
-    { label: 'Log activity', sub: 'Walk, class, sport…', emoji: '👟', color: 'periwinkle', onClick: () => setView('activity') },
-    { label: 'Tick habits', sub: habits.length ? `${habits.filter((h) => countOn(data, h.id, today) >= h.target).length} of ${habits.length} done` : 'Add your first', emoji: '✅', color: 'pink', onClick: () => setView(habits.length ? 'habits' : 'new-habit') },
-    { label: 'Pantry item', emoji: '🥫', color: 'butter', onClick: () => setView('pantry') },
-    { label: 'Plan a meal', emoji: '🍳', color: 'periwinkle', onClick: () => { onClose(); go('meals'); } },
-    { label: 'Save money', sub: 'Goals & yearly costs', emoji: '🐷', color: 'mint', onClick: () => { onClose(); go('savings'); } },
+    { label: 'Till slip', sub: 'Snap it, done', emoji: '📸', color: 'sky', onClick: () => setView('slip') },
+    water
+      ? { label: 'Water', sub: amountLabel(water, litres), emoji: '💧', color: 'mint', onClick: () => { const n = bump(water, litres, 1); setHabitCount(today, water.id, n); toast(`💧 ${amountLabel(water, n)}`); onClose(); } }
+      : { label: 'Tick habits', emoji: '✅', color: 'mint', onClick: () => setView(habits.length ? 'habits' : 'new-habit') },
+    { label: "Today's meals", emoji: '🍳', color: 'butter', onClick: () => { onClose(); go('meals'); } },
   ];
-  if (routine && !workoutDone) tiles.splice(3, 0, { label: 'Workout done', sub: routine.name, emoji: routine.emoji, color: 'coral', onClick: () => { saveWorkoutLog({ date: today, routineId: routine.id, name: routine.name, kind: routine.kind, minutes: routine.minutes, done: routine.exercises.map((_, i) => i), effort: 2 }); toast(`${routine.name} done 💪`); onClose(); } });
-  // Keep the grid even so no tile sits alone on the last row.
-  if (tiles.length % 2) tiles.push({ label: 'Shopping list', sub: 'This week', emoji: '📝', color: 'butter', onClick: () => { onClose(); go('shopping'); } });
 
   return (
     <Modal title="Add" onClose={onClose}>
