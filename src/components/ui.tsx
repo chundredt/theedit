@@ -95,8 +95,8 @@ export function Modal({ title, onClose, children, footer, wide, sub }: { title: 
     const onKey = (e: KeyboardEvent) => e.key === 'Escape' && onClose();
     window.addEventListener('keydown', onKey);
     lockScroll();
-    const first = ref.current?.querySelector<HTMLElement>('input:not([type=checkbox]), select, textarea');
-    first?.focus();
+    // On computers, start typing straight away; on phones, don't pop the keyboard up over the window.
+    if (window.matchMedia('(pointer: fine)').matches) ref.current?.querySelector<HTMLElement>('input:not([type=checkbox]), select, textarea')?.focus();
     return () => {
       window.removeEventListener('keydown', onKey);
       unlockScroll();

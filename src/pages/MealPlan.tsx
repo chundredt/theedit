@@ -141,36 +141,41 @@ function SlotPicker({ week, day, meal, plan, current, onPick, onClose }: { week:
   const shown = suggestions.filter((s) => !q || s.recipe.name.toLowerCase().includes(q.toLowerCase()));
   const hidden = data.recipes.length - suggestions.length;
   return (
-    <Modal wide title={`${MEAL_LABEL[meal]} · ${dayName(addDays(week, day), false)}`} sub="Best matches first: protein per rand, pantry items, and ingredients you're already buying this week." onClose={onClose}
+    <Modal wide title={`${MEAL_LABEL[meal]} · ${dayName(addDays(week, day), false)}`} sub="Best matches first. Tap a recipe to choose it, or its picture to see it." onClose={onClose}
       footer={<>
-        {current && <button className="btn danger left" onClick={() => onPick(null)}><Trash2 /> Remove meal</button>}
-        <span className="row small" style={{ gap: 6 }}>Servings
-          <button className="btn icon sm" onClick={() => setServings(Math.max(1, servings - 1))} aria-label="Fewer servings"><Minus /></button>
-          <b style={{ minWidth: 16, textAlign: 'center' }}>{servings}</b>
-          <button className="btn icon sm" onClick={() => setServings(servings + 1)} aria-label="More servings"><Plus /></button>
-        </span>
-        {current && <button className="btn primary" onClick={() => onPick({ ...current, servings })}>Update servings</button>}
-      </>}>
-      <div className="row wrap" style={{ marginBottom: 12 }}>
-        <div style={{ position: 'relative', flex: 1, minWidth: 180 }}>
-          <Search size={16} style={{ position: 'absolute', left: 12, top: 12, color: 'var(--muted)' }} />
-          <input className="input" style={{ paddingLeft: 36 }} placeholder="Search recipes" value={q} onChange={(e) => setQ(e.target.value)} />
+        {current && <button className="btn danger icon left" onClick={() => onPick(null)} aria-label="Remove meal" title="Remove meal"><Trash2 /></button>}
+        <div className="stepper" aria-label="Servings">
+          <button className="btn icon sm ghost" onClick={() => setServings(Math.max(1, servings - 1))} aria-label="Fewer servings"><Minus /></button>
+          <span><b>{servings}</b> serving{servings === 1 ? '' : 's'}</span>
+          <button className="btn icon sm ghost" onClick={() => setServings(servings + 1)} aria-label="More servings"><Plus /></button>
         </div>
-        <label className="check small"><input type="checkbox" checked={anyMeal} onChange={(e) => setAnyMeal(e.target.checked)} /> Show all meal types</label>
-        <button className="btn sm" onClick={() => setCreating(true)}><Plus /> New recipe</button>
+        {current && servings !== current.servings && <button className="btn primary" onClick={() => onPick({ ...current, servings })}>Save</button>}
+      </>}>
+      <div className="picker-tools">
+        <div style={{ position: 'relative' }}>
+          <Search size={16} style={{ position: 'absolute', left: 12, top: 12, color: 'var(--muted)' }} />
+          <input className="input" style={{ paddingLeft: 36 }} placeholder="Search recipes" value={q} onChange={(e) => setQ(e.target.value)} aria-label="Search recipes" />
+        </div>
+        <div className="row wrap" style={{ gap: 6 }}>
+          <button className={`chip clickable ${anyMeal ? 'on' : ''}`} onClick={() => setAnyMeal(!anyMeal)} aria-pressed={anyMeal}>All meal types</button>
+          <button className="chip clickable" onClick={() => setCreating(true)}><Plus /> New recipe</button>
+        </div>
       </div>
       <div className="list">
-        {shown.map((s) => (
-          <div key={s.recipe.id} className="list-item" style={{ alignItems: 'flex-start' }}>
-            <button style={{ width: 64, borderRadius: 10, overflow: 'hidden', flexShrink: 0, border: 0, padding: 0, cursor: 'pointer' }} onClick={() => setView(s.recipe)} aria-label={`View ${s.recipe.name}`}><RecipeImage recipe={s.recipe} height={56} /></button>
-            <div className="grow">
-              <div className="title">{s.recipe.name} {current?.recipeId === s.recipe.id && <span className="chip sage">Current</span>}</div>
-              <div className="meta">{s.stats.kcal} kcal · {Math.round(s.stats.protein)} g protein · {money(s.stats.costPerServing)}/serving · {s.recipe.prepMinutes} min</div>
-              <div className="row wrap" style={{ gap: 4, marginTop: 4 }}>{s.reasons.slice(0, 3).map((r) => <span key={r} className="chip sage">{r}</span>)}</div>
+        {shown.map((s) => {
+          const extra = s.reasons.find((r) => !/a serving$/.test(r) && !/g protein$/.test(r));
+          const isCurrent = current?.recipeId === s.recipe.id;
+          return (
+            <div key={s.recipe.id} className={`pick-row ${isCurrent ? 'current' : ''}`}>
+              <button className="pick-img" onClick={() => setView(s.recipe)} aria-label={`View ${s.recipe.name}`}><RecipeImage recipe={s.recipe} height={56} /></button>
+              <button className="pick-main" onClick={() => onPick({ recipeId: s.recipe.id, servings })} aria-label={`Choose ${s.recipe.name}`}>
+                <span className="pick-name">{s.recipe.name}</span>
+                <span className="pick-meta"><b>{Math.round(s.stats.protein)} g protein</b> · {money(s.stats.costPerServing, { cents: false })} · {s.recipe.prepMinutes} min · {s.stats.kcal} kcal</span>
+                {isCurrent ? <span className="chip sage">Current</span> : extra && <span className="pick-why">{extra}</span>}
+              </button>
             </div>
-            <button className="btn sm primary" onClick={() => onPick({ recipeId: s.recipe.id, servings })}>Choose</button>
-          </div>
-        ))}
+          );
+        })}
         {shown.length === 0 && <p className="muted small">No recipes found.</p>}
       </div>
       {hidden > 0 && <p className="muted xs mt-8">{hidden} recipe{hidden === 1 ? ' is' : 's are'} hidden by your diet or meal-type settings.</p>}

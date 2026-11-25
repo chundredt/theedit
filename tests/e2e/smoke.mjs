@@ -184,6 +184,14 @@ await step('mobile layout has bottom navigation and no horizontal scroll', async
     assert(overflow <= 1, `${r}: page scrolls horizontally by ${overflow}px`);
   }
   assert(await mp.locator('.bottom-nav').isVisible(), 'bottom nav not visible');
+  await mp.goto(`${BASE}?today=${TODAY}&show#meals`);
+  await mp.locator('.plan-mobile .slot').first().click();
+  const fits = await mp.evaluate(() => { const m = document.querySelector('.modal'); return m.getBoundingClientRect().right <= innerWidth + 1 && m.scrollWidth <= m.clientWidth + 1; });
+  assert(fits, 'meal picker should fit the phone screen');
+  const close = await mp.getByRole('button', { name: 'Close' }).boundingBox();
+  assert(close && close.x + close.width <= 390 && close.width >= 40, `close button should be visible and big enough: ${JSON.stringify(close)}`);
+  await mp.getByRole('button', { name: 'Close' }).click();
+  assert((await mp.locator('.modal').count()) === 0, 'picker should close');
   await mp.goto(`${BASE}?today=${TODAY}&show#budget`);
   const box = await mp.getByLabel('Planned for Rent / bond').boundingBox();
   assert(box && box.width >= 100 && box.height >= 40, `phone budget amount box too small: ${JSON.stringify(box)}`);

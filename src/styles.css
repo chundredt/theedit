@@ -629,3 +629,27 @@ h2 { font-weight: 800; font-size: 18px; letter-spacing: -0.01em; }
 .pcat-sub { display: flex; justify-content: space-between; gap: 8px; font-size: 13px; color: var(--muted); }
 .pcat-sub span:last-child { text-align: right; white-space: nowrap; }
 .pcat-sub b { color: var(--text-2); font-weight: 700; }
+
+/* Pop-up windows never wider than the screen */
+.overlay { grid-template-columns: minmax(0, 1fr); }
+.modal { min-width: 0; max-width: min(560px, 100%); }
+.modal.wide { max-width: min(860px, 100%); }
+.modal-head > div { min-width: 0; }
+.modal-head h2 { overflow-wrap: anywhere; }
+
+/* Meal picker */
+.picker-tools { display: flex; flex-direction: column; gap: 10px; margin-bottom: 8px; }
+.pick-row { display: flex; align-items: center; gap: 12px; padding: 10px 0; border-bottom: 1px solid var(--border); }
+.pick-row:last-child { border-bottom: 0; }
+.pick-row.current .pick-name { color: var(--sage-strong); }
+.pick-img { width: 56px; flex-shrink: 0; border: 0; padding: 0; border-radius: 12px; overflow: hidden; cursor: pointer; }
+.pick-img .recipe-img { font-size: 28px; }
+.pick-main { flex: 1; min-width: 0; display: flex; flex-direction: column; align-items: flex-start; gap: 3px; background: none; border: 0; padding: 4px 0; text-align: left; cursor: pointer; color: var(--text); }
+.pick-name { font-weight: 700; font-size: 15.5px; line-height: 1.25; }
+.pick-meta { font-size: 13px; color: var(--muted); }
+.pick-meta b { color: var(--text-2); font-weight: 700; }
+.pick-why { font-size: 12.5px; font-weight: 600; color: var(--sage-strong); }
+.stepper { display: inline-flex; align-items: center; gap: 4px; background: var(--surface-2); border-radius: 999px; padding: 3px; font-size: 14px; }
+.stepper span { min-width: 84px; text-align: center; }
+.modal-head .btn.icon.sm[aria-label="Close"] { width: 40px; height: 40px; background: var(--surface-2); flex-shrink: 0; }
+.modal-head .btn.icon.sm[aria-label="Close"] svg { width: 20px; height: 20px; }
